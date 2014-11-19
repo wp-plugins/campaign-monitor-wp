@@ -46,16 +46,23 @@ class EasyOptInsShortcodes {
 		}
 
 		$fca_eoi_meta = get_post_meta( $atts[ 'id' ], 'fca_eoi', true );
-		if( !$fca_eoi_meta ) {
+		if( ! $fca_eoi_meta ) {
 			return 'Form doesn\'t exist';
 		}
 
 		// Get template
 		$layout_id = $fca_eoi_meta[ 'layout' ];
-		$layout_path = $this->settings[ 'plugin_dir' ] . "layouts/$layout_id";
+		$layout_path_arr = glob( $this->settings[ 'plugin_dir' ] . "layouts/*/$layout_id", GLOB_ONLYDIR );
+		$layout_path = array_pop( $layout_path_arr );
 		$template = file_get_contents( $layout_path . '/layout.html' );
 		if( file_exists( $layout_path . '/layout.css' ) ) {
-			$template .= '<style>' . file_get_contents( $layout_path . '/layout.css' ) . '</style>';
+			$scss = new scssc();
+			$scss->setFormatter("scss_formatter_compressed");
+			$template = '<style>'
+				. $scss->compile( file_get_contents( $layout_path . '/layout.css' ) )
+				. '</style>'
+				. $template
+			;
 		}
 
 		// Fill template with our formatting stuff
@@ -86,12 +93,12 @@ class EasyOptInsShortcodes {
 				'<input type="email" name="email" placeholder="{{{email_placeholder}}}" 	/>',
 				'<input type="submit" value="{{{button_copy}}}" />',
 				'<span >{{{privacy_copy}}}</span>',
-				'{{#show_fatcatapps_link}}<p class="fca_eoi_' . $layout_id . '_fatcatapps_link_wrapper"><a href="http://fatcatapps.com/eoi" target="_blank">Powered by Easy Opt-ins</a></p>{{/show_fatcatapps_link}}',
+				'{{#show_fatcatapps_link}}<p class="fca_eoi_' . $layout_id . '_fatcatapps_link_wrapper"><a href="http://fatcatapps.com/eoi" target="_blank">Powered by fatcat apps</a></p>{{/show_fatcatapps_link}}',
 				'<input type="hidden" name="id" value="' . $atts[ 'id' ] . '"><input type="hidden" name="fca_eoi" value="1"></form>',
 			),
 			$template
 		);
-
+               
 		// Add per form CSS
 		$css = '';
 		if( ! empty( $fca_eoi_meta[ $layout_id ] ) ) {
@@ -104,15 +111,10 @@ class EasyOptInsShortcodes {
 					}
 				}
 				$css .= '}';
-			}
+			}                       
 			$css .= '</style>';
-		}
+		}               
 
-		// Add styles global to layouts
-		printf( "<style>%s { %s: %s !important; } </style>", ".fca_eoi_$layout_id", 'width', $fca_eoi_meta[ 'form_width' ] );
-		printf( "<style>%s { %s: %s !important; } </style>", ".fca_eoi_$layout_id", 'max-width', $fca_eoi_meta[ 'form_max_width' ] );
-
-		
 		$mustache = new Mustache_Engine;
 		$output = $css . $mustache->render(
 			$template,
@@ -126,6 +128,13 @@ class EasyOptInsShortcodes {
 				'show_name_field' => K::get_var( 'show_name_field', $fca_eoi_meta ),
 				'show_fatcatapps_link' => K::get_var( 'show_fatcatapps_link', $fca_eoi_meta ),
 			)
+		);
+
+		// add the fca_eoi_alter_form             
+		$output = apply_filters(
+			'fca_eoi_alter_form'
+			, $output
+			, $fca_eoi_meta
 		);
 
 		// Return form with debugging information if applicable

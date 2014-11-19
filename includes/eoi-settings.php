@@ -44,12 +44,11 @@ class EasyOptInsSettings
   {
 
     $provider_id = $this->settings[ 'provider' ];
-
     $provider_settings = $this->settings[ 'providers' ][  $provider_id ][ 'settings' ];
 
     register_setting('easy_opt_in_settings_group', 'easy_opt_in_settings', array($this, 'sanitize'));
 
-    add_settings_section('setting_api_settings', 'Compaign Monitor API Settings', false, basename(__FILE__));
+    add_settings_section('setting_api_settings', 'MailChimp API Settings', false, basename(__FILE__));
 
     foreach ( $provider_settings as $setting => $params ) {
       $params[ 'provider_id' ] = $provider_id;

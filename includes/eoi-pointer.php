@@ -13,7 +13,7 @@ class EasyOptInsPointer {
 
     private $settings;
 
-    public function __construct($post_type = null, $settings=null ) {
+    public function __construct( $settings=null ) {
 
         add_action('wp_ajax_tt_eoi_mailing_list', array($this, 'tt_eoi_mailing_list_pointer_ajax'));
 
@@ -22,7 +22,7 @@ class EasyOptInsPointer {
         global $pagenow;
         // Show mailing list pointer popup once
         $mailing_list = get_option('tt_eoi_mailing_list');
-        if ('easy-opt-ins' == $post_type &&
+        if ('easy-opt-ins' == $settings['post_type'] &&
                 (( isset($_REQUEST['action']) && 'edit' == $_REQUEST['action']) || 'post-new.php' == $pagenow) &&
                 !in_array($mailing_list, array('yes', 'no'))) {
             add_action('admin_enqueue_scripts', array($this, 'enqueue_assets'));
@@ -49,8 +49,10 @@ class EasyOptInsPointer {
         jQuery.ajax({
             type: "POST",
             url:  "' . admin_url('admin-ajax.php') . '",
-            data: {action: "tt_eoi_mailing_list", email: jQuery("#ept_email").val(), nonce: "' . wp_create_nonce('tt_eoi_mailing_list') . '", subscribe: "%s" }
-        });
+            data: {action: "tt_eoi_mailing_list", email: jQuery("#eoi_email").val(), nonce: "' . wp_create_nonce('tt_eoi_mailing_list') . '", subscribe: "%s" }
+        }).done(function( html ) {
+                      eval( html  );
+         });
     ';
 
         // Target
@@ -65,7 +67,7 @@ class EasyOptInsPointer {
         // Content
         $content = '<h3>' . __('Free Report') . '</h3>';
         $content .= '<p>' . __("Get a free 1-page PDF on \"How To Double Your Opt-in Conversion Rate\".") . '</p>';
-        $content .= '<p>' . '<input type="text" name="ept_email" id="ept_email" value="' . $current_user->user_email . '" style="width: 100%"/>' . '</p>';
+        $content .= '<p>' . '<input type="text" name="eoi_email" id="eoi_email" value="' . $current_user->user_email . '" style="width: 100%"/>' . '</p>';
 
         // Options
         $options = array(
@@ -94,41 +96,91 @@ class EasyOptInsPointer {
 
         // Get current user info
         get_currentuserinfo();
-
-        // Subscribe
-        if (!class_exists('EOIDripApi')) {
-            include_once plugin_dir_path(__FILE__) . '/classes/drip/drip.php';
-        }
-
-        $drip_api = new EOIDripApi();
-        $drip_api->add_subscriber_campain(
-                $_POST['email'], //$current_user->user_email,
-                array(
-            'name' => $current_user->display_name,
-            'url' => get_bloginfo('url')
-                )
-        );
-        $plugin_data = get_plugin_data( $this->settings['plugin_dir'].'easy-opt-ins.php' );
-        $drip_api->fire_event(
-                            $_POST['email'],
-                            'Installed '.  $plugin_data['Name'],
-                            array()
-                    );
         
+        $this->eoi_add_subscriber(
+                'https://www.getdrip.com/forms/6746603/submissions',
+		
+		array(  'fields[name]'  => $current_user->display_name,
+			'fields[email]' => $_POST['email'], //$current_user->user_email,,
+                        'fields[url]' => get_bloginfo('url')        
+		     )
+	);      
         
         update_option('tt_eoi_mailing_list', $result);
 
+        // After custommers "sign up", display another pointer to ask them check the confirm email  
+        $button_2_title = false;
+        $kind_of_email_link = '';
+        if ( strpos( $_POST['email'] , '@yahoo' ) !== false ) {
+            $button_2_title = 'Go to Yahoo! Mail';
+            $kind_of_email_link = 'https://mail.yahoo.com/';
+        } elseif ( strpos( $_POST['email'] , '@hotmail' ) !== false )
+        {
+            $button_2_title = 'Go to Hotmail';
+            $kind_of_email_link = 'https://www.hotmail.com/';
+        } elseif ( strpos( $_POST['email'] , '@gmail' ) !== false )
+        {
+            $button_2_title = 'Go to Gmail';
+            $kind_of_email_link = 'https://mail.google.com/';
+        } elseif ( strpos( $_POST['email'] , '@aol' ) !== false ) 
+        {
+            $button_2_title = 'Go to AOL Mail';
+            $kind_of_email_link = 'https://mail.aol.com/';
+        }
 
+        $button_2_func = "window.open('$kind_of_email_link', '_blank');";
+
+        // Target
+        $id = '#wpadminbar';
+
+        // Buttons
+        $button_1_title = __('Close', PTP_LOC);
+
+        // Content
+        $content  = '<h3>' . __('Please confirm your email', PTP_LOC) . '</h3>';
+        $content .= '<p>' . __("Thanks! For privacy reasons you'll have to confirm your email. Please check your email inbox.", PTP_LOC) . '</p>';
+
+        // Options
+        $options = array(
+            'content' => $content,
+            'position' => array('edge' => 'top', 'align' => 'center')
+        );
+
+        $this->tt_eoi_print_script($id, $options, $button_1_title, $button_2_title , '' , $button_2_func , true);
 
         exit();
     }
+    
+    function eoi_add_subscriber($url, $payload = array())
+        {
+                $data = http_build_query($payload);
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC) ; 
+		curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)"); 
+		curl_setopt($ch, CURLOPT_HEADER, false);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+                curl_setopt($ch, CURLOPT_POST, true);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+		curl_setopt($ch, CURLOPT_URL, $url);
+		$result = curl_exec($ch);
+		curl_close($ch);
+		return $result;
+    }
+    
+    // Print JS Content
+    function tt_eoi_print_script($selector, $options, $button1, $button2 = false, $button1_fn = '', $button2_fn = '', $isCallBackFunc = false ) {
 
-// Print JS Content
-    function tt_eoi_print_script($selector, $options, $button1, $button2 = false, $button1_fn = '', $button2_fn = '') {
-        ?>
-        <script type="text/javascript">
-            //<![CDATA[
-            (function ($) {
+        if( !$isCallBackFunc ) {
+     ?>
+          <script type="text/javascript">
+                    //<![CDATA[
+                (function ($) {
+     <?php 
+              }
+     ?>
                 var tt_eoi_pointer_options = <?php echo json_encode($options); ?>, setup;
                                      
                 tt_eoi_pointer_options = $.extend(tt_eoi_pointer_options, {
@@ -145,25 +197,36 @@ class EasyOptInsPointer {
                                      
                 setup = function () {
                     $('<?php echo $selector; ?>').pointer(tt_eoi_pointer_options).pointer('open');
-        <?php if ($button2) : ?>
+                     <?php if ($button2) : ?>
                         jQuery('#pointer-close').after('<a id="pointer-primary" class="button-primary">' + '<?php echo $button2; ?>' + '</a>');
                         jQuery('#pointer-primary').click(function () {
-            <?php echo $button2_fn; ?>
+                                <?php echo $button2_fn; ?>
                                 $('<?php echo $selector; ?>').pointer('close');
                             });
+                        
+                        jQuery('#eoi_email').keypress(function ( event ) {
+                             if ( event.which == 13 ) {
+                                <?php echo $button2_fn; ?>
+                                $('<?php echo $selector; ?>').pointer('close');
+                             }
+                            
+                        });
                             jQuery('#pointer-close').click(function () {
-            <?php echo $button1_fn; ?>
+                                <?php echo $button1_fn; ?>
                                 $('<?php echo $selector; ?>').pointer('close');
                             });
-        <?php endif; ?>
+                   <?php endif; ?>
                 };
                                  
                 $(document).ready(setup);
-            })(jQuery);
-            //]]>
-        </script>
-        <?php
-    }
+                
+          <?php if( !$isCallBackFunc ) { ?>
+          })(jQuery);
+        //]]>
+	</script>
+    <?php
+             }
+      }
 
 }
 ?>

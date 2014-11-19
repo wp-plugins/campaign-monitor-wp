@@ -8,6 +8,8 @@ class EasyOptInsPostTypes {
 
 		$this->settings = $settings;
 
+		$providers_available = array_keys( $this->settings[ 'providers' ] );
+
 		// Register custom post type
 		add_action( 'init', array( $this, 'register_custom_post_type' ) );
 
@@ -32,7 +34,7 @@ class EasyOptInsPostTypes {
 
 		add_filter( 'wp_insert_post_data', array( $this, 'force_published' ) );
 
-		add_action( 'admin_footer', array( $this, 'disable_metabox_toggle' ) );
+		// add_action( 'admin_footer', array( $this, 'disable_metabox_toggle' ) );
 
 		add_action( 'wp_ajax_fca_eoi_subscribe', array( $this, 'ajax_subscribe' ) );
 
@@ -48,17 +50,23 @@ class EasyOptInsPostTypes {
 
 		add_action( 'admin_notices', array( $this, 'admin_notices' ) );
 
-		add_filter('enter_title_here', array($this, 'change_default_title'));
+		add_filter( 'enter_title_here', array( $this, 'change_default_title' ) );
 
-		add_action( 'wp_ajax_fca_eoi_get_lists', $settings['provider'] . '_ajax_get_lists' );
+		add_filter( 'init', array( $this, 'bind_content_filter' ), 10 );
 
-                add_action('post_submitbox_start', array($this, 'trigger_post_submitbox_start'),50);
-                
+		foreach ( $providers_available as $provider ) {
+			add_action( 'wp_ajax_fca_eoi_' . $provider . '_get_lists', $provider . '_ajax_get_lists' );
+		}
+
 		// Hook provder callback functions
-		add_filter( 'fca_eoi_alter_admin_notices', $settings['provider'] . '_admin_notices', 10, 1 );
+		foreach ( $providers_available as $provider ) {
+			add_filter( 'fca_eoi_alter_admin_notices', $provider . '_admin_notices', 10, 1 );
+		} 
 	}
 
 	public function more_settings() {
+
+		$providers_available = array_keys( $this->settings[ 'providers' ] );
 
 		// Get the post id 
 		if( is_admin() ) {
@@ -74,14 +82,28 @@ class EasyOptInsPostTypes {
 			: get_post_meta( $form_id, 'fca_eoi', true )
 		;
 
-		// Initialize a provider instance
-		$this->settings[ 'helper' ] = empty ( $form_id )
-			? false
-			: call_user_func( $this->settings[ 'provider' ] . '_object', $this->settings );
-		;
+		// Add last 3 posts and there meta
+		// We need to prepare the previous posts
+		$fca_eoi_last_3_forms = array();
+		foreach (query_posts( 'posts_per_page=3&post_type=easy-opt-ins' ) as $i => $f ) {
+			$fca_eoi_last_3_forms[ $i ][ 'post' ] = $f;
+			$fca_eoi_last_3_forms[ $i ][ 'fca_eoi' ] = get_post_meta( $f->ID, 'fca_eoi', true );
+		}
+		// reset query after the loop
+		wp_reset_query();
+		$this->settings[ 'fca_eoi_last_3_forms' ] = $fca_eoi_last_3_forms;
+
+		// Initialize provider(s) instance(s)
+		foreach ( $providers_available as $provider ) {
+			$this->settings[ $provider . '_helper' ] = empty ( $form_id )
+				? call_user_func( $provider . '_object', $this->settings )
+				: call_user_func( $provider . '_object', $this->settings );
+			;
+		}
 	}
 
 	public function register_custom_post_type() {
+
 		$labels = array(
 			'name' => __('Opt-in Forms') ,
 			'singular_name' => __('Opt-in Form') ,
@@ -98,11 +120,9 @@ class EasyOptInsPostTypes {
 			'menu_name' => __('Opt-in Forms')
 		);
 		$args = array(
-			'menu_icon' =>
-				$this->settings[ 'plugin_url' ]
-				. '/providers/'
-				. $this->settings[ 'provider' ] 
-				. '/icon.png'
+			'menu_icon' => $this->settings[ 'provider' ] 
+				? "{$this->settings['plugin_url']}/providers/{$this->settings['provider']}/icon.png"
+				: "{$this->settings['plugin_url']}/icon.png"
 			,
 			'labels' => $labels,
 			'public' => false,
@@ -132,7 +152,7 @@ class EasyOptInsPostTypes {
 	public function add_meta_boxes() {
 		add_meta_box(
 			'fca_eoi_meta_box_nav',
-			'Navigation', 
+			__( 'Navigation' ),
 			array( &$this, 'meta_box_content_nav' ),
 			'easy-opt-ins',
 			'side',
@@ -140,7 +160,7 @@ class EasyOptInsPostTypes {
 		);
 		add_meta_box(
 			'fca_eoi_meta_box_setup',
-			'Setup', 
+			__( 'Setup' ),
 			array( &$this, 'meta_box_content_setup' ),
 			'easy-opt-ins',
 			'side',
@@ -148,12 +168,46 @@ class EasyOptInsPostTypes {
 		);
 		add_meta_box(
 			'fca_eoi_meta_box_build',
-			'Build', 
+			__( 'Form Builder' ),
 			array( &$this, 'meta_box_content_build' ),
 			'easy-opt-ins',
 			'side',
 			'high'
 		);
+		add_meta_box(
+			'fca_eoi_meta_box_provider',
+			__( 'Email Marketing Provider Integration' ),
+			array( &$this, 'meta_box_content_provider' ),
+			'easy-opt-ins',
+			'side',
+			'high'
+		);
+		add_meta_box(
+			'fca_eoi_meta_box_publish',
+			__( 'Publication' ),
+			array( &$this, 'meta_box_content_publish' ),
+			'easy-opt-ins',
+			'side',
+			'high'
+		);
+		add_meta_box(
+			'fca_eoi_meta_box_thanks',
+			__( 'Thank You Page' ),
+			array( &$this, 'meta_box_content_thanks' ),
+			'easy-opt-ins',
+			'side',
+			'high'
+		);
+		if ( has_action( 'fca_eoi_powerups' ) ) {
+			add_meta_box(
+				'fca_eoi_meta_box_powerups',
+				__( 'Power Ups' ),
+				array( &$this, 'meta_box_content_powerups' ),
+				'easy-opt-ins',
+				'side',
+				'high'
+			);
+		}
 		if ( FCA_EOI_DEBUG ) {
 			add_meta_box(
 				'fca_eoi_meta_box_debug',
@@ -171,7 +225,7 @@ class EasyOptInsPostTypes {
 		<h2 class="nav-tab-wrapper" style="padding: 0 10px">
 			<a href="#fca_eoi_meta_box_setup" class="nav-tab nav-tab-active">Choose</a>
 			<a href="#fca_eoi_meta_box_build" class="nav-tab ">Build</a>
-			<?php if( FCA_EOI_DEBUG) : ?>
+			<?php if( FCA_EOI_DEBUG ) : ?>
 				<a href="#fca_eoi_meta_box_debug" class="nav-tab ">Debug</a>
 			<?php endif; ?>
 		</h2>
@@ -181,95 +235,163 @@ class EasyOptInsPostTypes {
 	public function meta_box_content_setup() {
 
 		global $post;
+
+		$layouts_types_labels = array(
+			'widget' => 'Widgets',
+			'postbox' => 'Post Boxes',
+			'lightbox' => 'Lightbox Popups',
+		);
+
 		$fca_eoi = get_post_meta( $post->ID, 'fca_eoi', true );
 
 		echo '<h2>' . __( 'Layouts' ) . '</h2>';
 		echo '<script id="fca_eoi_texts" type="application/json">{ "headline_copy": "Headline Copy", "description_copy": "Description Copy", "name_placeholder": "Name Placeholder", "email_placeholder": "Email Placeholder", "button_copy": "Button Copy", "privacy_copy": "Privacy Copy" }</script>';
 			
 		// Build the layouts array
-		$layouts = array();
-		foreach ( glob( $this->settings[ 'plugin_dir' ] . 'layouts/*', GLOB_ONLYDIR ) as $layout_path ) {
-			// Grab layout details
-			$layout_id = basename( $layout_path );
-			include $layout_path . '/layout.php';
-			if( file_exists( $layout_path . '/screenshot.jpg' ) ) {
-				$layout[ 'has_screenshot' ] = true;
-			} else {
-				$layout[ 'has_screenshot' ] = false;
+		$layouts = $layouts_types = $layouts_types_found = array();
+		foreach ( glob( $this->settings[ 'plugin_dir' ] . 'layouts/*', GLOB_ONLYDIR ) as $v) {
+			$layouts_types_found[] = basename( $v );
+		}
+
+		$layouts_types_accepted = array_keys( $layouts_types_labels );
+		foreach ( $layouts_types_accepted as $layout_type ) {
+			if ( in_array( $layout_type, $layouts_types_found ) ) {
+				$layouts_types[] = $layout_type;
 			}
-			$layout[ 'css' ] = file_exists( $layout_path . '/layout.css' )
-				? file_get_contents( $layout_path . '/layout.css')
-				: '';
-			$layout[ 'template' ] = file_get_contents( $layout_path . '/layout.html');
-			$layout[ 'template' ] = str_replace(
-				array(
-					'<form',
-					'/form',
-					'{{{description_copy}}}',
-					'{{{headline_copy}}}',
-					'{{{name_field}}}',
-					'{{{email_field}}}',
-					'{{{submit_button}}}',
-					'{{{privacy_copy}}}',
-					'{{{fatcatapps_link}}}'
+		}
+
+		// Layouts types mini-tabs
+		echo '<ul class="category-tabs" id="layouts_types_tabs">';
+		foreach ( $layouts_types as $layout_type ) {
+			K::wrap(
+				$layouts_types_labels[ $layout_type ]
+				, array(
+					'href' => '#'. 'layouts_type_' . $layout_type,
 				)
 				, array(
-					'<div id="fca_eoi_preview_form" class="fca_eoi_' . $layout_id . '"',
-					'/div',
-					'<div data-fca-eoi-fieldset-id ="description">{{{description_copy}}}</div>',
-					'<span data-fca-eoi-fieldset-id ="headline" id="fca_eoi_preview_headline_copy">{{{headline_copy}}}</span>',
-					'<input data-fca-eoi-fieldset-id ="name_field" type="text" placeholder="{{{name_placeholder}}}" />',
-					'<input data-fca-eoi-fieldset-id ="email_field" type="email" placeholder="{{{email_placeholder}}}" />',
-					'<input data-fca-eoi-fieldset-id ="button" type="submit" value="{{{button_copy}}}" />',
-					'<span data-fca-eoi-fieldset-id ="privacy">{{{privacy_copy}}}</span>',
-					'{{#show_fatcatapps_link}}<p class="fca_eoi_' . $layout_id . '_fatcatapps_link_wrapper"><span data-fca-eoi-fieldset-id ="fatcatapps"><a href="#" onclick="javascript:return false">Powered by Easy Opt-ins</a></span></p>{{/show_fatcatapps_link}}',
+					'html_before' => '<li' . ( 'widget' === $layout_type ? ' class="tabs"' : '' ) . ' >',
+					'html_after' => '</li> ',
+					'in' => 'a',
 				)
-				, $layout[ 'template' ]
 			);
-			$layout[ 'template' ] .= sprintf( '<style>%s</style>', $layout[ 'css' ] );
-			$layouts[ $layout_id ] = $layout;
-			// Output the layout image and hidden template
-			$layout_output_tpl = '
-				<div
-					class="fca_eoi_layout has-tip"
-					data-layout-id=":id" title="Your theme’s built-in form styling will be used." data-tooltip				
-				>
-					<img src=":src" />
-					<h3>:name</h3>
-					<script id="fca_eoi_tpl_:id" type="x-tmpl-mustache">:template</script>
-					<script id="fca_eoi_editables_:id" type="application/json">:editables</script>
-					<script id="fca_eoi_texts_:id" type="application/json">:texts</script>
-				</div>
-			';
-			$layout_output = str_replace(
-				array(
-					':id',
-					':name',
-					':src',
-					':template',
-					':editables',
-					':texts',
-				),
-				array(
-					$layout_id,
-					$layout[ 'name' ],
-					$layout[ 'has_screenshot' ] 
-						? $this->settings[ 'plugin_url' ] . '/layouts/' . $layout_id . '/screenshot.jpg'
-						: $this->settings[ 'plugin_url' ] . '/layouts/no-image.jpg'
-					,
-					$layout[ 'template' ],
-					( ! empty( $layout[ 'editables' ] ) )
-						? json_encode( $layout[ 'editables' ] )
-						: 'null'
-					,
-					( ! empty( $layout[ 'texts' ] ) )
-						? json_encode( $layout[ 'texts' ] )
-						: 'null'
-					,
-				),
-				$layout_output_tpl
-			);
-			echo $layout_output;
+		}
+		echo '</ul>';
+
+		// Layout types
+		foreach ( $layouts_types as $layout_type ) {
+			echo '<div id="layouts_type_' . $layout_type . '">';
+			foreach ( glob( $this->settings[ 'plugin_dir' ] . "layouts/$layout_type/*", GLOB_ONLYDIR ) as $layout_path ) {
+				// Grab layout details
+				$layout_id = basename( $layout_path );
+				include $layout_path . '/layout.php';
+				$layout[ 'css' ] = file_exists( $layout_path . '/layout.css' )
+					? file_get_contents( $layout_path . '/layout.css')
+					: '';
+				$layout[ 'template' ] = file_get_contents( $layout_path . '/layout.html');
+				$layout[ 'template' ] = str_replace(
+					array(
+						'<form',
+						'/form',
+						'{{{description_copy}}}',
+						'{{{headline_copy}}}',
+						'{{{name_field}}}',
+						'{{{email_field}}}',
+						'{{{submit_button}}}',
+						'{{{privacy_copy}}}',
+						'{{{fatcatapps_link}}}'
+					)
+					, array(
+						'<div id="fca_eoi_preview_form" class="fca_eoi_' . $layout_id . '"',
+						'/div',
+						'<div data-fca-eoi-fieldset-id ="description">{{{description_copy}}}</div>',
+						'<span data-fca-eoi-fieldset-id ="headline" id="fca_eoi_preview_headline_copy">{{{headline_copy}}}</span>',
+						'<input data-fca-eoi-fieldset-id ="name_field" type="text" placeholder="{{{name_placeholder}}}" />',
+						'<input data-fca-eoi-fieldset-id ="email_field" type="email" placeholder="{{{email_placeholder}}}" />',
+						'<input data-fca-eoi-fieldset-id ="button" type="submit" value="{{{button_copy}}}" />',
+						'<span data-fca-eoi-fieldset-id ="privacy">{{{privacy_copy}}}</span>',
+						'{{#show_fatcatapps_link}}<p class="fca_eoi_' . $layout_id . '_fatcatapps_link_wrapper"><span data-fca-eoi-fieldset-id ="fatcatapps"><a href="#" onclick="javascript:return false">Powered by fatcat apps</a></span></p>{{/show_fatcatapps_link}}',
+					)
+					, $layout[ 'template' ]
+				);
+				$layout[ 'template' ] .= sprintf( '<style>%s</style>', $layout[ 'css' ] );
+				$layouts[ $layout_id ] = $layout;
+				// Output the layout image and hidden template
+				$layout_output_tpl = '
+					<div
+						class="fca_eoi_layout has-tip"
+						data-layout-id=":id" data-layout-type=":type" title="Your theme’s built-in form styling will be used." data-tooltip				
+					>
+						<img src=":src" />
+						<h3>:name</h3>
+						<script id="fca_eoi_tpl_:id" type="x-tmpl-mustache">:template</script>
+						<script id="fca_eoi_editables_:id" type="application/json">:editables</script>
+						<script id="fca_eoi_texts_:id" type="application/json">:texts</script>
+					</div>
+				';
+				$layout_output = str_replace(
+					array(
+						':id',
+						':type',
+						':name',
+						':src',
+						':template',
+						':editables',
+						':texts',
+					),
+					array(
+						$layout_id,
+						$layout_type,
+						$layout[ 'name' ],
+						file_exists( $layout_path . '/screenshot.png' )
+							? $this->settings[ 'plugin_url' ] . '/layouts/' . $layout_type . '/' . $layout_id . '/screenshot.png'
+							: $this->settings[ 'plugin_url' ] . '/layouts/no-image.jpg'
+						,
+						$layout[ 'template' ],
+						! empty( $layout[ 'editables' ] )
+							? json_encode( $layout[ 'editables' ] )
+							: 'null'
+						,
+						! empty( $layout[ 'texts' ] )
+							? json_encode( $layout[ 'texts' ] )
+							: 'null'
+						,
+					),
+					$layout_output_tpl
+				);
+
+				// Add autocolors
+				if( ! empty( $layout[ 'autocolors' ] ) ) {
+					foreach ($layout[ 'autocolors' ] as $autocolor ) {
+						$layout_output .= '
+							<script>
+								jQuery( document ).ready( function( $ ) { 
+									
+									var source = "[name*=\'' . $autocolor[ 'source' ] . '\']";
+									var destination = "[name*=\'' . $autocolor[ 'destination' ] . '\']";
+
+									$( destination ).closest( "p" ).hide();
+
+									$( document ).on( "change", source, function() {
+										var c = tinycolor( $(this).val() );'
+						;
+						foreach ( $autocolor[ 'operations'] as $op => $val ) {
+							$layout_output .= '
+										c = c.' . $op. '( ' . 1*$val . ' );
+										';
+						}
+						$layout_output .= '
+										$( destination ).val( c.toString() )
+										$( destination ).blur();
+									} );
+								} );
+							</script>'
+						;
+					}
+				}
+
+				echo $layout_output;
+			}
+			echo '</div>';
 		}
 		echo '<br clear="all"/>';
 
@@ -295,7 +417,10 @@ class EasyOptInsPostTypes {
 		// Prepare the properties fields templates
 		$property_templates[ 'color' ] = K::input( '{{property_name}}',
 			array(
-				'class' => 'color { hash: true, caps: false, required: false }',
+				'class' => sprintf(
+					"color { hash: true, caps: false, required: false, pickerPosition: '%s' }"
+					, is_rtl() ? 'right' : 'left'
+				),
 				'value' => '{{property_value}}',
 			),
 			array(
@@ -348,6 +473,12 @@ class EasyOptInsPostTypes {
 					'28px' => '28px',
 					'29px' => '29px',
 					'30px' => '30px',
+					'31px' => '31px',
+					'32px' => '32px',
+					'33px' => '33px',
+					'34px' => '34px',
+					'35px' => '35px',
+					'36px' => '36px',
 				),
 				'selected' => 'none',
 				'return' => true,
@@ -367,90 +498,159 @@ class EasyOptInsPostTypes {
 		;
 	}
 
+	public function meta_box_content_provider() {
+
+		global $post;
+		$fca_eoi = get_post_meta( $post->ID, 'fca_eoi', true );
+		$providers_available = array_keys( $this->settings[ 'providers' ] );
+		$providers_options = array();
+		$screen = get_current_screen();
+		$fca_eoi_last_3_forms = $this->settings[ 'fca_eoi_last_3_forms' ];
+
+		// @todo: remove
+		// Hack for mailchimp upgrade
+		$fca_eoi[ 'mailchimp_list_id' ] = K::get_var(
+			'mailchimp_list_id'
+			, $fca_eoi
+			, K::get_var( 'list_id' , $fca_eoi )
+		);
+		if( K::get_var( 'list_id' , $fca_eoi ) ) {
+			$fca_eoi[ 'provider' ] = 'mailchimp';
+		}
+		// End of hack
+		// Hack for campaignmonitor upgrade
+		$fca_eoi[ 'campaignmonitor_list_id' ] = K::get_var(
+			'campaignmonitor_list_id'
+			, $fca_eoi
+			, K::get_var( 'list_id' , $fca_eoi )
+		);
+		if( strlen( K::get_var( 'campaignmonitor_list_id' , $fca_eoi ) ) == 32){
+			$fca_eoi[ 'provider' ] = 'campaignmonitor';
+		}
+		// End of hack
+
+		// Prepare providers options
+		foreach ($this->settings[ 'providers' ] as $provider_id => $provider ) {
+			$providers_options[ $provider_id ] = $provider[ 'info' ][ 'name' ];
+		}
+
+		// Provider choice if there are many providers
+		if ( 1 < count( $providers_available) ) {
+
+			K::select( 'fca_eoi[provider]'
+				, array( 
+					'class' => 'select2',
+					'style' => 'width: 27em;',
+				)
+				, array( 
+					'format' => '<p><label>:select</label></p>',
+					'options' => array( '' => 'Not set' ) + $providers_options,
+					'selected' => K::get_var( 'provider', $fca_eoi ),
+				)
+			);
+		}
+
+		$providers_available = array_keys( $this->settings[ 'providers' ] );
+		foreach ( $providers_available as $provider ) {
+			call_user_func( $provider . '_integration', $this->settings );
+		}
+	}
+
+	public function meta_box_content_publish() {
+
+		global $post;
+
+		$fca_eoi = get_post_meta( $post->ID, 'fca_eoi', true );
+
+		// Widgets
+		K::wrap(
+			sprintf(
+				__( 'You can publish this opt-in box by going to <a href="%s" target="_blank">Appearance › Widgets</a>')
+				, admin_url( 'widgets.php')
+			)
+			, array( 'id' => 'fca_eoi_publish_widget' )
+			, array( 'in' => 'p' )
+		);
+
+		// Post boxes
+		echo '<div id ="fca_eoi_publish_postbox">';
+		K::wrap( __( 'Shortcode')
+			, array( 'style' => 'padding-left: 0px; padding-right: 0px; ' )
+			, array( 'in' => 'h3' )
+		);
+		K::wrap( __( "Copy and paste beneath shortcode anywhere on your site where you'd like this opt-in form to appear." )
+			, null
+			, array( 'in' => 'p' )
+		);
+		K::input( ''
+			, array(
+				'class' => 'regular-text autoselect',
+				'readonly' => 'readonly',
+				'value' => sprintf( '[%s id=%d]', $this->settings[ 'shortcode' ], $post->ID ),
+			)
+			, array( 'format' => '<p>:input</p>', )
+		);
+		K::wrap( __( 'Append to post or page')
+			, array( 'style' => 'padding-left: 0px; padding-right: 0px; ' )
+			, array( 'in' => 'h3' )
+		);
+		K::wrap( __( 'Automatically append this opt-in to the following posts, categories and/or pages.' )
+			, null
+			, array( 'in' => 'p' )
+		);
+		k_selector( 'fca_eoi[publish_postbox]', K::get_var( 'publish_postbox', $fca_eoi, array( 'post' ) ) );
+		echo '</div>';
+
+		// Light boxes
+		echo '<div id ="fca_eoi_publish_lightbox">';
+		K::wrap( __( 'Shortcode')
+			, array( 'style' => 'padding-left: 0px; padding-right: 0px; ' )
+			, array( 'in' => 'h3' )
+		);
+		K::wrap( __( "Copy and paste beneath shortcode anywhere on your site where you'd like this opt-in form to appear." )
+			, null
+			, array( 'in' => 'p' )
+		);
+		K::input( ''
+			, array(
+				'class' => 'regular-text autoselect',
+				'readonly' => 'readonly',
+				'value' => "[easy-opt-ins id=$post->ID]",
+			)
+			, array( 'format' => '<p>:input</p>', )
+		);
+		K::wrap( __( 'Append to post or page')
+			, array( 'style' => 'padding-left: 0px; padding-right: 0px; ' )
+			, array( 'in' => 'h3' )
+		);
+		K::wrap( __( 'Automatically append this opt-in to the following posts, categories and/or pages.' )
+			, null
+			, array( 'in' => 'p' )
+		);
+		k_selector( 'fca_eoi[publish_lightbox]', K::get_var( 'publish_lightbox', $fca_eoi, array( 'post' ) ) );
+		echo '</div>';
+	}
+
 	public function meta_box_content_build() {
 
 		global $post;
 		$fca_eoi = get_post_meta( $post->ID, 'fca_eoi', true );
+		$providers_available = array_keys( $this->settings[ 'providers' ] );
+		$providers_options = array();
+		$screen = get_current_screen();
+		$fca_eoi_last_3_forms = $this->settings[ 'fca_eoi_last_3_forms' ];
+
+		// Prepare providers options
+		foreach ($this->settings[ 'providers' ] as $provider_id => $provider ) {
+			$providers_options[ $provider_id ] = $provider[ 'info' ][ 'name' ];
+		}
 
 		K::wrap( '', array( 'id' => 'fca_eoi_preview' ) );
 
 		echo '<div id="fca_eoi_settings">';
 
-		// General Settings
-		do_action( 'fca_eoi_before_fieldset_group_general_settings', $fca_eoi );
-		K::wrap( 'Setup',
-			array( 'style' => 'color: white; background: gray; padding: .5em; border-radius: 2px' ),
-			array( 'in' => 'h4' )
-		);
-		do_action( 'fca_eoi_before_fieldset_form_inegration', $fca_eoi );
-		call_user_func( $this->settings[ 'provider' ] . '_integration', $this->settings );
-
-		$pages_objects = get_pages();
-		$pages = array();
-		foreach ( $pages_objects as $page_obj ) {
-			// !d( $page_obj->ID );
-			$pages[ $page_obj->ID ] = $page_obj->post_title;
-		}
-
-		do_action( 'fca_eoi_before_fieldset_thank_you_page', $fca_eoi );
-		K::fieldset( 'Thank you page',
-			array(
-				array(
-					'wrap',
-					'Redirect user to the following page after submitting the form:',
-					null,
-					array( 'in' => 'p' ),
-				),
-				array(
-					'select',
-					'fca_eoi[thank_you_page]',
-					array( 
-						'class' => 'select2',
-						'style' => 'width: 100%',
-					),
-					array( 
-						'format' => '<p><label>:select</label></p>',
-						'options' => array( '' => 'Not set' ) + $pages,
-						'selected' => K::get_var( 'thank_you_page', $fca_eoi ),
-					),
-				),
-			),
-			array(
-				'class' => 'k collapsible collapsed',
-				'id' => 'fca_eoi_fieldset_form_integration',
-			)
-		);
-
-		// Design Settings
-		do_action( 'fca_eoi_before_fieldset_group_design_settings', $fca_eoi );
-		K::wrap( 'Design & Content',
-			array( 'style' => 'color: white; background: gray; padding: .5em; border-radius: 2px' ),
-			array( 'in' => 'h4' ) 
-		);
 		K::fieldset( 'Form',
 			array(
-				array(
-					'input',
-					'fca_eoi[form_width]',
-					array(
-						'value' => ( K::get_var( 'form_width', $fca_eoi) )
-							? K::get_var( 'form_width', $fca_eoi )
-							: '100%'
-						,
-					),
-					array( 'format' => '<p style="display:none" ><label>Width :input</label></p>' )
-				),
-				array(
-					'input',
-					'fca_eoi[form_max_width]',
-					array(
-						'value' => ( K::get_var( 'form_max_width', $fca_eoi) )
-							? K::get_var( 'form_max_width', $fca_eoi )
-							: '280px'
-						,
-					),
-					array( 'format' => '<p style="display:none" ><label>Max Width :input</label></p>' )
-				),
 			),
 			array(
 				'class' => 'k collapsible collapsed',
@@ -461,7 +661,7 @@ class EasyOptInsPostTypes {
 			array(
 				array( 'input', 'fca_eoi[headline_copy]',
 					array( 'value' => K::get_var( 'headline_copy', $fca_eoi ), ),
-					array( 'format' => '<p><label>Headline Copy :input</label></p>' )
+					array( 'format' => '<p><label>Headline Copy<br />:input</label></p>' )
 				),
 			),
 			array(
@@ -500,7 +700,7 @@ class EasyOptInsPostTypes {
 					array( 
 						'value' => K::get_var( 'name_placeholder', $fca_eoi ) ? K::get_var( 'name_placeholder', $fca_eoi ) : 'Your Name',
 					),
-					array( 'format' => '<p><label>Placeholder Text :input</label></p>' )
+					array( 'format' => '<p><label>Placeholder Text<br />:input</label></p>' )
 				),
 			),
 			array(
@@ -512,7 +712,7 @@ class EasyOptInsPostTypes {
 			array(
 				array( 'input', 'fca_eoi[email_placeholder]',
 					array( 'value' => K::get_var( 'email_placeholder', $fca_eoi ) ? K::get_var( 'email_placeholder', $fca_eoi ) : 'Your Email' ),
-					array( 'format' => '<p><label>Placeholder Text :input</label></p>' )
+					array( 'format' => '<p><label>Placeholder Text<br />:input</label></p>' )
 				),
 			),
 			array(
@@ -524,7 +724,7 @@ class EasyOptInsPostTypes {
 			array(
 				array( 'input', 'fca_eoi[button_copy]',
 					array( 'value' => K::get_var( 'button_copy', $fca_eoi ) ? K::get_var( 'button_copy', $fca_eoi ) : 'Subscribe Now' ),
-					array( 'format' => '<p><label>Button Copy :input</label></p>' ) 
+					array( 'format' => '<p><label>Button Copy<br />:input</label></p>' ) 
 				),
 			),
 			array(
@@ -534,9 +734,14 @@ class EasyOptInsPostTypes {
 		);
 		K::fieldset( 'Privacy Policy',
 			array(
-				array( 'input', 'fca_eoi[privacy_copy]',
-					array( 'value' => K::get_var( 'privacy_copy', $fca_eoi ) ),
-					array( 'format' => '<p><label>Privacy Policy Copy :input</label></p>' )
+				array( 'textarea', 'fca_eoi[privacy_copy]',
+					array(
+						'class' => 'large-text',
+					),
+					array(
+						'format' => '<p><label>Privacy Policy Copy<br />:textarea</label></p>',
+						'value' => K::get_var( 'privacy_copy', $fca_eoi ),
+					)
 				),
 			),
 			array(
@@ -565,26 +770,83 @@ class EasyOptInsPostTypes {
 				'id' => 'fca_eoi_fieldset_fatcatapps',
 			)
 		);
-                
-                $is_showing_power_up = 'none';
-                if (has_action('fca_eoi_after_fieldset_group_power_ups')) {
-                    $is_showing_power_up = 'block';
-                }
-                $power_up_style = 'color: white; background: gray; padding: .5em; border-radius: 2px;display:' . $is_showing_power_up;
-                
-                K::wrap('Power Ups', array('style' => $power_up_style), array('in' => 'h4')
-                );
-                
-                do_action('fca_eoi_after_fieldset_group_power_ups', $fca_eoi);
-                
 		echo '</div>';
+	}
+
+	public function meta_box_content_thanks() {
+		global $post;
+		$fca_eoi = get_post_meta( $post->ID, 'fca_eoi', true );
+		$screen = get_current_screen();
+		$fca_eoi_last_3_forms = $this->settings[ 'fca_eoi_last_3_forms' ];
+
+		// Get the previous thank you page if this is a new post
+		$thank_you_page_suggestion = false;
+		if ( 'add' === $screen->action ) {
+			foreach ( $fca_eoi_last_3_forms as $fca_eoi_previous_form ) {
+				try {
+					if(
+						K::get_var( 'fca_eoi', $fca_eoi_previous_form )
+						&& K::get_var( 'thank_you_page', $fca_eoi_previous_form[ 'fca_eoi' ] )
+					) {
+						$thank_you_page_suggestion = $fca_eoi_previous_form[ 'fca_eoi' ][ 'thank_you_page' ];
+						break;
+					}
+				} catch ( Exception $e ) {}
+			}
+		}
+
+		// Prepare options
+		$pages_objects = get_pages();
+		$pages = array();
+		foreach ( $pages_objects as $page_obj ) {
+			$pages[ $page_obj->ID ] = $page_obj->post_title;
+		}
+
+		K::wrap( 'Redirect user to the following page after submitting the form:'
+			, null
+			, array( 'in' => 'p' )
+		);
+		K::select( 'fca_eoi[thank_you_page]'
+			, array( 
+				'class' => 'select2',
+				'style' => 'width: 27em;',
+			)
+			, array( 
+				'format' => '<p><label>:select</label></p>',
+				'options' => array( '' => 'Not set' ) + $pages,
+				'selected' => 'add' === $screen->action
+					? $thank_you_page_suggestion
+					: K::get_var( 'thank_you_page', $fca_eoi )
+				,
+			)
+		);
+		K::wrap( __( 'Create a new "Thank You Page" &rsaquo;' )
+			, array(
+				'href' => admin_url( 'post-new.php?post_type=page' ),
+				'target' => '_blank',
+			)
+			, array(
+				'in' => 'a',
+				'html_before' => '<p>',
+				'html_after' => '</p>',
+			)
+		);
+	}
+
+	public function meta_box_content_powerups() {
+
+		global $post;
+		$fca_eoi = get_post_meta( $post->ID, 'fca_eoi', true );
+
+		do_action('fca_eoi_powerups', $fca_eoi ); 
 	}
 
 	public function meta_box_content_debug() {
 
 		global $post;
+
 		$fca_eoi = get_post_meta( $post->ID, 'fca_eoi', true );
-		
+
 		!d( $fca_eoi );
 	}
 
@@ -596,30 +858,44 @@ class EasyOptInsPostTypes {
 		// Save meta data
 		delete_post_meta( $post->ID, 'fca_eoi' );
 		if( $meta = K::get_var( 'fca_eoi', $_POST ) ) {
+			// Add provider if missing (happens on free distros where there is only one provider)
+			if( ! K::get_var( 'provider', $meta ) ) {
+				$meta[ 'provider' ] = $this->settings[ 'provider' ];
+			}
+
+			// Keep only the current providers settings, Remove all [provider]_[setting] not belonging to the current provider
+			$provider = K::get_var( 'provider', $meta );
+			if( $provider ) {
+				$providers = array_keys( $this->settings[ 'providers' ] );
+				$other_providers = array_values( array_diff( $providers, array( $provider ) ) );
+				foreach ( $meta as $k => $v ) {
+					$p = explode( '_', $k );
+					$k_1 = array_shift( $p );
+					if( in_array( $k_1, $other_providers ) ) {
+						unset( $meta[ $k ] );
+					}
+				}
+			}
+
+			// Sanitize custom CSS
+			$meta[ 'custom_css' ] = sanitize_text_field( K::get_var( 'custom_css', $meta ) );
+
+			// Make sure emtpy value for publish_postbox or publish_lightbox are saved as array(-1)
+			if( ! K::get_var( 'publish_postbox' , $meta, array() ) ) {
+				$meta[ 'publish_postbox' ] = array(-1);
+			}
+			if( ! K::get_var( 'publish_lightbox' , $meta, array() ) ) {
+				$meta[ 'publish_lightbox' ] = array(-1);
+			}
+
 			add_post_meta( $post->ID, 'fca_eoi', $meta );
-		}
-	}
-
-	public function custom_post_type_columns( $columns ) {
-		$columns = array(
-			'cb' => '<input type="checkbox" />',
-			'title' => 'Name',
-			'shortcode' => 'Shortcode',
-			'date' => 'Date'
-		);
-		return $columns;
-	}
-
-	public function custom_post_type_columns_content( $column_name, $post_id ) {
-		if ($column_name === 'shortcode') {
-			echo sprintf('[%s id="%d"]', $this->settings['shortcode'], $post_id);
 		}
 	}
 
 	public function live_preview( $content ) {
 		global $post;
 		if (get_post_type() == 'easy-opt-ins' && is_main_query()) {
-			$shortcode = sprintf('[%s id="%d"]', $this->settings['shortcode'], $post->ID);
+			$shortcode = sprintf( '[%s id=%d]', $this->settings[ 'shortcode' ], $post->ID );
 			return do_shortcode($shortcode);
 		} else {
 			return $content;
@@ -630,22 +906,23 @@ class EasyOptInsPostTypes {
 
 		$protocol = is_ssl() ? 'https' : 'http';
 		$provider = $this->settings[ 'provider' ];
+		$providers_available = array_keys( $this->settings[ 'providers' ] );
 
 		$screen = get_current_screen();
 		if( 'easy-opt-ins' === $screen->id ){
 			wp_enqueue_script( 'mustache', $protocol . '://cdnjs.cloudflare.com/ajax/libs/mustache.js/0.8.1/mustache.min.js' );
 			wp_enqueue_script( 'select2', $protocol . '://cdnjs.cloudflare.com/ajax/libs/select2/3.5.0/select2.js' );
+			wp_enqueue_script( 'tinycolor', $protocol . '://cdnjs.cloudflare.com/ajax/libs/tinycolor/1.0.0/tinycolor.min.js' );
 			wp_enqueue_script( 'jscolor', $this->settings['plugin_url'] . '/assets/vendor/jscolor/jscolor.js' );
 			wp_enqueue_script( 'admin-cpt-easy-opt-ins', $this->settings['plugin_url'] . '/assets/admin/cpt-easy-opt-ins.js' );
-			wp_enqueue_script( 'admin-cpt-easy-opt-ins-' . $provider, $this->settings['plugin_url'] . '/providers/' . $provider . '/cpt-easy-opt-ins.js' );
-
-
-
+			wp_enqueue_style( 'fca_eoi', $this->settings[ 'plugin_url' ].'/assets/style.css' );
+			foreach ( $providers_available as $provider ) {
+				wp_enqueue_script( 'admin-cpt-easy-opt-ins-' . $provider, $this->settings['plugin_url'] . '/providers/' . $provider . '/cpt-easy-opt-ins.js' );
+			}
 			wp_enqueue_style( 'admin-cpt-easy-opt-ins', $this->settings['plugin_url'] . '/assets/admin/cpt-easy-opt-ins.css' );
 			wp_enqueue_style( 'font-awesome', $protocol . '://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.1.0/css/font-awesome.min.css' );
 			wp_enqueue_style( 'select2', $protocol . '://cdnjs.cloudflare.com/ajax/libs/select2/3.5.0/select2.min.css' );
-                        wp_enqueue_script('tooltipster', $protocol . '://cdnjs.cloudflare.com/ajax/libs/tooltipster/3.0.5/js/jquery.tooltipster.min.js');
-                        wp_enqueue_style('tooltipster', $protocol . '://cdnjs.cloudflare.com/ajax/libs/tooltipster/3.0.5/css/tooltipster.min.css');
+			wp_enqueue_script('bootstrap-js', $protocol . '://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.2.0/js/bootstrap.min.js');
 		}
 		if( 'widgets' === $screen->id ){
 			wp_enqueue_script( 'select2', $protocol . '://cdnjs.cloudflare.com/ajax/libs/select2/3.5.0/select2.js' );
@@ -709,33 +986,36 @@ class EasyOptInsPostTypes {
 	public function order_columns( $order ) {
 		return array(
 			'normal' => join( ",", array(
+				'submitdiv',
 				'fca_eoi_meta_box_nav',
 				'fca_eoi_meta_box_setup',
 				'fca_eoi_meta_box_build',
+				'fca_eoi_meta_box_provider',
+				'fca_eoi_meta_box_thanks',
+				'fca_eoi_meta_box_publish',
+				'fca_eoi_meta_box_powerups',
 				'fca_eoi_meta_box_debug',
-				'submitdiv',
 			) ),
 			'side' => '',
 			'advanced' => '',
 		);
 	}
-        
-        /*
-           replacing the default "Enter title here" placeholder text in the title input box
-           to 
-          */
 
-        public function change_default_title($title) {
+	/**
+	 * replacing the default "Enter title here" placeholder text in the title input box to 
+	 * 
+	 */
+	public function change_default_title($title) {
 
-            $screen = get_current_screen();
+		$screen = get_current_screen();
 
-            if ('easy-opt-ins' == $screen->post_type) {
-                $title = 'Enter name here';
-            }
+		if ( 'easy-opt-ins' == $screen->post_type ) {
+			$title = 'Enter name here';
+		}
 
-            return $title;
-        }
-        
+		return $title;
+	}
+
 	/**
 	 * Override some strings to match our likings
 	 */
@@ -746,13 +1026,13 @@ class EasyOptInsPostTypes {
 				switch ( $text ) {
 				case 'Post published. <a href="%s">View post</a>':
 				case 'Post updated. <a href="%s">View post</a>':
-					$text = __( 'Opt-In Form saved. <a href="%s" target="fca-eoi-preview">Preview</a>.' );
+					$text = __( 'Opt-In Form saved.' );
 					break;
 				case 'Publish':
 					$text = __( 'Save' );
 					break;
 				case 'Update':
-					$text = __( 'Save Form' );
+					$text = __( 'Save' );
 					break;
 				}
 			}
@@ -777,7 +1057,7 @@ class EasyOptInsPostTypes {
 		unset( $actions[ 'edit' ] );
 		return $actions;
 	}
-	
+
 	/**
 	 * Removes quick edit
 	 */
@@ -803,7 +1083,7 @@ class EasyOptInsPostTypes {
 		$list_id = K::get_var( 'list_id' , $_POST );
 		if( ! $list_id ) {
 			echo '✗';
-			die();
+			exit;
 		}
 
 		// Subscribe user
@@ -815,7 +1095,7 @@ class EasyOptInsPostTypes {
 		} else {
 			echo '✗';
 		}
-		die();
+		exit;
 	}
 
 	/**
@@ -838,19 +1118,43 @@ class EasyOptInsPostTypes {
 		}
 
 		// Get meta
-		$post_meta = get_post_meta( $id, 'fca_eoi', true );
+		$fca_eoi = get_post_meta( $id, 'fca_eoi', true );
+		$provider = K::get_var( 'provider' , $fca_eoi );
 
 		// Check a list_id is provided
-		$list_id = K::get_var( 'list_id' , $post_meta );
+		$list_id = K::get_var( $provider . '_list_id' , $fca_eoi );
+
+		// @todo: remove
+		// Hack for mailchimp upgrade
+		if( empty( $fca_eoi[ 'provider' ] ) ) {
+			$list_id = K::get_var(
+				'mailchimp_list_id'
+				, $fca_eoi
+				, K::get_var( 'list_id' , $fca_eoi )
+			);
+			$provider = 'mailchimp';
+		}
+		// End of Hack
+
+		// Hack for campaignmonitor upgrade
+		if( strlen( K::get_var( 'list_id' , $fca_eoi ) ) == 32){
+			$list_id = K::get_var(
+				'campaignmonitor_list_id'
+				, $fca_eoi
+				, K::get_var( 'list_id' , $fca_eoi )
+			);
+			$provider = 'campaignmonitor';
+		}
+		// End of Hack
 		if( ! $list_id ) {
 			return;
 		}
 
 		// Subscribe user
-		$status = call_user_func( $this->settings[ 'provider' ] . '_add_user' , $this->settings , $_POST , $list_id );
+		$status = call_user_func( $provider . '_add_user' , $this->settings , $_POST , $list_id );
 
 		// Go to thank you page if any
-		$thank_you_page = K::get_var( 'thank_you_page', $post_meta );
+		$thank_you_page = K::get_var( 'thank_you_page', $fca_eoi );
 		if( $thank_you_page ) {
 			wp_redirect( get_permalink( $thank_you_page ) );
 			exit;
@@ -864,7 +1168,7 @@ class EasyOptInsPostTypes {
 		// Exit function if we are not on the opt-in editing page
 		if ( ! (
 				'easy-opt-ins' === $current_screen->id 
-				&& 'post' === $current_screen->base  
+				&& 'post' === $current_screen->base
 				&& 'edit' === $current_screen->parent_base
 				&& '' === $current_screen->action
 			) ) {
@@ -873,6 +1177,7 @@ class EasyOptInsPostTypes {
 
 		global $post;
 		$fca_eoi = get_post_meta( $post->ID, 'fca_eoi', true );
+		$provider = K::get_var( 'provider', $fca_eoi);
 		$errors = array();
 
 		// Add error for missing thank you page
@@ -881,8 +1186,22 @@ class EasyOptInsPostTypes {
 			$errors[] = __( 'No "Thank you" page selected. You will not be able to use this form.' );
 		}
 
-		// Add error for missing list setting
-		$list_set = ( bool ) K::get_var( 'list_id', $fca_eoi);
+		// Add error for missing list setting for the current provider
+		$list_set = ( bool ) K::get_var( $provider . '_list_id', $fca_eoi);
+
+		// @todo: remove
+		// Hack for mailchimp upgrade
+		if( empty( $fca_eoi[ 'provider' ] ) ) {
+			$fca_eoi[ 'mailchimp_list_id' ] = K::get_var(
+				'mailchimp_list_id'
+				, $fca_eoi
+				, K::get_var( 'list_id' , $fca_eoi )
+			);
+			$list_set = ( bool ) K::get_var( 'mailchimp_list_id', $fca_eoi);
+		}
+		// End of Hack
+
+
 		if( ! $list_set ) {
 			$errors[] = __( 'No List selected. You will not be able to use this form.' );
 		}
@@ -893,23 +1212,193 @@ class EasyOptInsPostTypes {
 			echo '<div class="error"><p>' . $error . '</p></div>';
 		}
 	}
-        
-        //change text of "Save" button to 'Saving' while processing
-        function trigger_post_submitbox_start(){
-            
-            if( $post = K::get_var( 'post', $GLOBALS ) ) {
-		if ( 'easy-opt-ins' === $post->post_type ) {
-                    ?>
-                            <script type="text/javascript">
-                                        jQuery( document ).ready( function($) {
-                                            $( '#publish' ).click(function(){
-                                                postL10n.publish = 'Saving';
-                                                postL10n.update= 'Saving';
-                                            });
 
-                                        } );
-                                </script>   
-                        <?php
-                        }}
-        }
+	public function bind_content_filter() {
+
+		// Do nothing in backend
+		if ( is_admin() ) {
+			return;
+		}
+
+		$url = 'http'
+			. ( is_ssl() ? 's' : '' )
+			. '://'
+			. $_SERVER[ 'HTTP_HOST' ]
+			. $_SERVER[ 'REQUEST_URI' ]
+		;
+		$post_ID = url_to_postid( $url );
+		
+		// Do nothing if not viewing a post
+		if( ! $post_ID ) {
+			return;
+		}
+
+		// Do nothing if viewing an opt-in
+		if( 'easy-opt-ins' === get_post_type( get_post( $post_ID ) ) ) {
+			return;
+		}
+
+		// Great, we attach the filter now
+		add_filter( 'the_content', array( $this, 'content' ), 10, 1 );
+	}
+
+	public function content( $content ) {
+
+		global $post;
+
+		// Post details
+		$post_ID = $post->ID;
+		$post_type = get_post_type( $post_ID );
+
+		// Build the array for testing
+		$post_cond = array(
+			'*',
+			$post_type,
+			'#' . $post_ID,
+		);
+		$taxonomies = get_taxonomies('','names');
+		$post_taxonomies = wp_get_object_terms( $post->ID,$taxonomies);
+		foreach ( $post_taxonomies as $t ) {
+			$post_cond[] = $post_type . ':' . $t->term_id;
+		}
+
+		$fca_eoi_last_99_forms = array();
+		foreach (query_posts( 'posts_per_page=99&post_type=easy-opt-ins' ) as $i => $f ) {
+			$fca_eoi_last_99_forms[ $i ][ 'post' ] = $f;
+			$fca_eoi_last_99_forms[ $i ][ 'fca_eoi' ] = get_post_meta( $f->ID, 'fca_eoi', true );
+		}
+		wp_reset_query();
+
+		// Append postcode shortcode when the conditions match
+		foreach( $fca_eoi_last_99_forms as $f) {
+		
+			// Exclude other layout types
+			if ( empty ( $f[ 'fca_eoi' ][ 'layout' ] ) ) {
+				continue;
+			}
+			if ( strpos( $f[ 'fca_eoi' ][ 'layout' ], 'postbox_' ) !== 0 ) {
+				continue;
+			}
+		
+			// Get conditions
+			$eoi_form_cond = K::get_var( 'publish_postbox', $f[ 'fca_eoi' ], array() );
+		
+			// Append
+			if ( array_intersect( $eoi_form_cond, $post_cond ) ) {
+				$shortcode = sprintf( '[%s id=%d]', $this->settings[ 'shortcode' ], $f[ 'post' ]->ID );
+				$content .= $shortcode;
+			}
+		}
+
+		return $content;
+	}
+}
+
+function k_selector( $name, $selected_options = array() ) {
+
+	global $post;
+	// Dirty fix to restore the global $post
+	$post_bak = $post;
+
+	// Get all post types except media
+	$post_types = get_post_types( array( 'public' => true ) );
+	unset( $post_types[ 'attachment' ] );
+
+	// Start ouput
+	echo '<select 
+		data-placeholder="' . __( 'Type to search for posts, categories or pages.' ) . '"
+		name = "' . $name . '[]"
+		class="select2"
+		multiple="multiple"
+		style="width: 27em;"
+	>';
+
+	// All posts
+	// K::wrap( __( 'All' )
+	// 	, array(
+	// 		'value' => '*',
+	// 		'selected' => in_array( '*', $selected_options ),
+	// 	)
+	// 	, array( 'in' => 'option' )
+	// );
+
+	foreach ($post_types as $post_type => $post_type_args ) {
+
+		$post_type_obj = get_post_type_object( $post_type );
+		$post_type_name = $post_type_obj->labels->singular_name;
+
+		$options = array();
+
+		// Add taxonomy/terms options
+		$taxonomies = get_object_taxonomies( $post_type );
+		foreach ( $taxonomies as $taxonomy ) {
+			$taxonomy_obj = get_taxonomy( $taxonomy );
+			$taxonomy_name = $taxonomy_obj->labels->singular_name;
+			$terms = get_categories("taxonomy=$taxonomy&type=$post_type"); 
+			foreach ($terms as $term) {
+				$options[ 'taxonomies' ][ "$post_type:$term->term_id" ] =
+					$post_type_name
+					. " › $taxonomy_name"
+					. " › $term->name"
+				;
+			}
+		}
+
+		// Add posts options
+		$the_query = new WP_Query( "post_type=$post_type&posts_per_page=-1" );
+		if ( $the_query->have_posts() ) {
+
+			while ( $the_query->have_posts() ) {
+				$the_query->the_post();
+				$options[ 'posts' ][ '#' . get_the_ID() ] = $post_type_name
+					. ' ' . __( '›' ) . ' '
+					. '#' . get_the_ID() . ' &ndash; '
+					. ( get_the_title() ? get_the_title() : __('[Untitled]') )
+				;
+			}
+		}
+
+		// Dirty fix to restore the global $post
+		$post = $post_bak;
+
+		// Posts > All
+		echo '<optgroup label="' . $post_type_name . '">';
+		printf(
+			'<option value="%s" %s >%s</option>'
+			, $post_type
+			, ( in_array( $post_type, $selected_options ) ? 'selected' : '' )
+			, $post_type_name . ' ' . ( '›' ) . ' ' . __( 'All' )
+		);
+		echo '</optgroup>';
+
+		// Posts > Taoxonomies
+		if ( ! empty( $options[ 'taxonomies' ] ) ) {
+			printf(
+				'<optgroup label="%s">'
+				, $post_type_name . ' ' . __( '›' ) . ' ' . __( 'Taxonomies' )
+			);
+			foreach ( $options[ 'taxonomies' ] as $k => $v ) {
+				$selected = ( in_array( $k, $selected_options ) ) ? 'selected="selected"' : '';
+				printf( '<option value="%s" %s >%s</option>', $k, $selected, $v );
+			}
+			echo '</optgroup>';
+		}
+
+		// Posts > content
+		if ( ! empty( $options[ 'posts' ] ) ) {
+			printf( '<optgroup label="%s">'
+				, $post_type_name . ' ' . __( '›' ) . ' ' . __( 'Content' )
+			);
+			foreach ( $options[ 'posts' ] as $k => $v ) {
+				$selected = ( in_array( $k, $selected_options ) ) ? 'selected="selected"' : '';
+				printf( '<option value="%s" %s >%s</option>'
+					, $k
+					, $selected
+					, $v
+				);
+			}
+			echo '</optgroup>';
+		}
+	}
+	echo '</select>';
 }
