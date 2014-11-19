@@ -1,22 +1,5 @@
-.easy_opt_in_container h3 {
-	margin: 10px 0px 15px;
-}
-.easy_opt_in_container .easy_opt_in_content {
-	padding: .5em 1em;
-	margin: .5em;
-}
-.easy_opt_in_container ::-moz-placeholder { opacity: .7; }
-.easy_opt_in_container ::-webkit-input-placeholder { opacity: .7; }
-.easy_opt_in_container :-ms-input-placeholder { opacity: .7; }
-.easy_opt_in_container :-moz-placeholder { opacity: .7; }
-
 .tooltipster-default {
 	background: #DE607C !important;
 	border: #DE607C !important;
 	margin-top: 10px;
-}
-
-.fca_eoi_layout_2_description_copy_wrapper {
-   text-align: center;
-
 }

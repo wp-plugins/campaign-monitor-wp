@@ -1,9 +1,16 @@
 @charset "utf-8";
 
-body.fca_eoi #poststuff {
-	display: none;
+#poststuff {
+	opacity: 0;
 }
-
+#poststuff .inside {
+    margin-top: 0;
+    padding-right: 0;
+}
+div[id^="layouts_type_"] img {
+	max-height: 150px;
+	max-width: 150px;
+}
 .fca_eoi_layout {
 	border: dashed 4px transparent;
 	box-shadow: 0 0 1px lightgray inset;
@@ -22,16 +29,37 @@ body.fca_eoi #poststuff {
 html[dir='rtl'] .fca_eoi_layout {
 	float: right;
 }
+div[id^=fca_eoi_] fieldset.k legend {
+	background: #333;
+	border-radius: 5px;
+	color: white;
 
+}
+div[id^=fca_eoi_] fieldset.k {
+	border-color: black !important;
+	margin-left: .5em;
+	margin-right: .5em;
+}
 #fca_eoi_preview {
 	float: left;
-	margin: 1em auto 0;
+	margin: 1em auto;
 	width: 60%;
+}
+#fca_eoi_preview input[type=submit]{
+	cursor: pointer;
 }
 #fca_eoi_preview_form {
 	margin: auto;
-	max-width: 300px;
 	padding: 1em;
+}
+#fca_eoi_preview_form[class^=fca_eoi_layout_] {
+	max-width: 300px;
+}
+#fca_eoi_preview_form[class^=fca_eoi_postbox_] {
+	max-width: 600px;
+}
+#fca_eoi_preview_form[class^=fca_eoi_lightbox_] {
+	max-width: 500px;
 }
 html[dir=rtl] #fca_eoi_preview {
 	float: right;
@@ -45,9 +73,20 @@ html[dir=rtl] #fca_eoi_preview {
 }
 #fca_eoi_settings {
 	float: right;
+	background: #F9F9F9;
+	border: 1px solid #E2E2E2;
+	padding-top: 1em;
 	width: calc( 40% - 1em );
 }
-
+#fca_eoi_settings > h4 {
+	background: #222;
+	box-shadow: 0 0 1px #222;
+	color: white;
+	padding: .5em;
+}
+#fca_eoi_settings > h4:first-child {
+	margin-top: 0;
+}
 #fca_eoi_settings .wp-editor-tools {
 	background: white;
 }
@@ -91,9 +130,11 @@ html[dir=rtl] #fca_eoi_preview {
 #screen-options-link-wrap {
 	display: none;
 }
-/* Hide meta boxes toggles */
-.postbox .hndle,
-.postbox .handlediv {
+/* Hide toggle in some meta boxes */
+#fca_eoi_meta_box_setup.postbox .hndle,
+#fca_eoi_meta_box_setup.postbox .handlediv,
+#submitdiv.postbox .hndle,
+#submitdiv.postbox .handlediv {
 	display: none;
 }
 
@@ -109,7 +150,7 @@ html[dir=rtl] #fca_eoi_preview {
 }
 
 #fca_eoi_meta_box_build {
-	padding: 2em 0;
+	padding: 0;
 	overflow: hidden;
 }
 
@@ -144,7 +185,33 @@ html[dir=rtl] #publishing-action {
 	display: none;
 }
 
-.fca_eoi_layout_2_description_copy_wrapper {
-   text-align: center;
+div[id^=layouts_type_] {
+	border-top: solid 1px #DFDFDF;
+}
 
+fieldset[id^=fca_eoi_fieldset_form_][id$=_integration] {
+	border: none;
+}
+
+fieldset[id^=fca_eoi_fieldset_form_][id$=_integration] legend {
+	display: none;
+}
+
+/* TT */
+a[id^="fca-eoi-tour-pointer-previous"] {
+	float: left !important;
+}
+
+.fca_eoi_tour_pointer_style div.wp-pointer-arrow-inner {
+	border-top-color: rgba(0, 0, 0, 0.25);
+}
+
+.CodeMirror {
+	background: #f8f8f8;
+	border: 1px solid #ddd;
+	height: 200px !important;
+}
+
+.CodeMirror pre span {
+	display: inline;
 }
