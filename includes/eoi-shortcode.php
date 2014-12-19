@@ -54,12 +54,20 @@ class EasyOptInsShortcodes {
 		$layout_id = $fca_eoi_meta[ 'layout' ];
 		$layout_path_arr = glob( $this->settings[ 'plugin_dir' ] . "layouts/*/$layout_id", GLOB_ONLYDIR );
 		$layout_path = array_pop( $layout_path_arr );
+		if( ! file_exists( $layout_path . '/layout.html' )) return;
 		$template = file_get_contents( $layout_path . '/layout.html' );
 		if( file_exists( $layout_path . '/layout.css' ) ) {
 			$scss = new scssc();
 			$scss->setFormatter("scss_formatter_compressed");
 			$template = '<style>'
-				. $scss->compile( file_get_contents( $layout_path . '/layout.css' ) )
+				. '.fca_eoi_form p { width: auto; }'
+				. $scss->compile(
+					sprintf( '$ltr: %s;', is_rtl() ? 'false' : 'true' )
+					. '#fca_eoi_form_' . $atts[ 'id' ] . '{'
+					. 'input{ max-width: 9999px; }'
+					. file_get_contents( $layout_path . '/layout.css' )
+					. '}'
+				)
 				. '</style>'
 				. $template
 			;
@@ -79,7 +87,8 @@ class EasyOptInsShortcodes {
 				'</form>',
 			),
 			array(
-				sprintf( '<form method="post" action="" class="fca_eoi_form fca_eoi_%s" data-fca_eoi_list_id="%s" data-fca_eoi_thank_you_page="%s" novalidate><input type="hidden" name="fca_eoi_form_id" value="%s" />'
+				sprintf( '<div id="fca_eoi_form_%s" style="margin:0 !important; padding: 0 !important;"><form method="post" action="" class="fca_eoi_form fca_eoi_%s" data-fca_eoi_list_id="%s" data-fca_eoi_thank_you_page="%s" novalidate><input type="hidden" name="fca_eoi_form_id" value="%s" />'
+					, $atts[ 'id' ]
 					, $layout_id
 					, K::get_var( 'list_id', $fca_eoi_meta )
 					, get_permalink( K::get_var( 'thank_you_page', $fca_eoi_meta ) ) 
@@ -94,25 +103,28 @@ class EasyOptInsShortcodes {
 				'<input type="submit" value="{{{button_copy}}}" />',
 				'<span >{{{privacy_copy}}}</span>',
 				'{{#show_fatcatapps_link}}<p class="fca_eoi_' . $layout_id . '_fatcatapps_link_wrapper"><a href="http://fatcatapps.com/eoi" target="_blank">Powered by fatcat apps</a></p>{{/show_fatcatapps_link}}',
-				'<input type="hidden" name="id" value="' . $atts[ 'id' ] . '"><input type="hidden" name="fca_eoi" value="1"></form>',
+				'<input type="hidden" name="id" value="' . $atts[ 'id' ] . '"><input type="hidden" name="fca_eoi" value="1"></form></div>',
 			),
 			$template
 		);
-               
+
 		// Add per form CSS
-		$css = '';
+		$css = '<style>.fca_eoi_form{ margin: auto; }</style>';
+		$css_for_scss ='';
 		if( ! empty( $fca_eoi_meta[ $layout_id ] ) ) {
 			$css .= '<style>';
+			$css_for_scss .= "#fca_eoi_form_${atts[ 'id' ]} {";
 			foreach ($fca_eoi_meta[ $layout_id ] as $selector => $declarations) {
-				$css .= "$selector{";
+				$css_for_scss .= "$selector{";
 				foreach ($declarations as $property => $value) {
 					if( strlen( $value ) ) {
-						$css .= "$property:$value !important;";
+						$css_for_scss .= "$property:$value !important;";
 					}
 				}
-				$css .= '}';
+				$css_for_scss .= '}';
 			}                       
-			$css .= '</style>';
+			$css_for_scss .= '}';
+			$css .= $scss->compile( $css_for_scss ) . '</style>';
 		}               
 
 		$mustache = new Mustache_Engine;
@@ -131,8 +143,7 @@ class EasyOptInsShortcodes {
 		);
 
 		// add the fca_eoi_alter_form             
-		$output = apply_filters(
-			'fca_eoi_alter_form'
+		$output = apply_filters( 'fca_eoi_alter_form'
 			, $output
 			, $fca_eoi_meta
 		);

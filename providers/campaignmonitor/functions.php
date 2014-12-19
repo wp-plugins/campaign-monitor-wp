@@ -2,9 +2,15 @@
 
 function campaignmonitor_object( $settings ) {
 
-	require_once $settings[ 'plugin_dir' ] . "providers/campaignmonitor/campaignmonitor/csrest_general.php";
-	require_once $settings[ 'plugin_dir' ] . "providers/campaignmonitor/campaignmonitor/csrest_clients.php";
-	require_once $settings[ 'plugin_dir' ] . "providers/campaignmonitor/campaignmonitor/csrest_subscribers.php";
+	if ( ! class_exists( 'CS_REST_General ' ) ) {
+		require_once $settings[ 'plugin_dir' ] . "providers/campaignmonitor/campaignmonitor/csrest_general.php";
+	}
+	if ( ! class_exists( 'CS_REST_Clients' ) ) {
+		require_once $settings[ 'plugin_dir' ] . "providers/campaignmonitor/campaignmonitor/csrest_clients.php";
+	}
+	if ( ! class_exists( 'CS_REST_Subscribers' ) ) {
+		require_once $settings[ 'plugin_dir' ] . "providers/campaignmonitor/campaignmonitor/csrest_subscribers.php";
+	}
 
 	$suggested = array();
 	foreach ( $settings[ 'fca_eoi_last_3_forms' ] as $fca_eoi_previous_form ) {
@@ -112,9 +118,15 @@ function campaignmonitor_ajax_get_lists() {
 
 		global $dh_easy_opt_ins_plugin;
 		$settings = $dh_easy_opt_ins_plugin->settings;
-		require_once $settings[ 'plugin_dir' ] . "providers/campaignmonitor/campaignmonitor/csrest_general.php";
-		require_once $settings[ 'plugin_dir' ] . "providers/campaignmonitor/campaignmonitor/csrest_clients.php";
-		require_once $settings[ 'plugin_dir' ] . "providers/campaignmonitor/campaignmonitor/csrest_subscribers.php";
+		if ( ! class_exists( 'CS_REST_General ' ) ) {
+			require_once $settings[ 'plugin_dir' ] . "providers/campaignmonitor/campaignmonitor/csrest_general.php";
+		}
+		if ( ! class_exists( 'CS_REST_Clients' ) ) {
+			require_once $settings[ 'plugin_dir' ] . "providers/campaignmonitor/campaignmonitor/csrest_clients.php";
+		}
+		if ( ! class_exists( 'CS_REST_Subscribers' ) ) {
+			require_once $settings[ 'plugin_dir' ] . "providers/campaignmonitor/campaignmonitor/csrest_subscribers.php";
+		}
 
 		$auth = array( 'api_key' => $api_key );
 		$wrap = new CS_REST_Clients( $client_id, $auth );

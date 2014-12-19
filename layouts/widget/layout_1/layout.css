@@ -14,13 +14,17 @@
 }
 .fca_eoi_layout_1_description_copy_wrapper,
 .fca_eoi_layout_1_privacy_copy_wrapper {
-	margin: .5em !important;
+	margin: .5em;
 }
 .fca_eoi_layout_1_inputs_wrapper {
-	border-bottom: solid 1px #DBDBDB;
 	border-top: solid 1px #DBDBDB;
-	margin: 1em;
-	padding: .5em 0;
+	margin: 1em 1em 0;
+	padding: .5em 0 0;
+}
+.fca_eoi_layout_1_inputs_wrapper + p {
+	border-top: solid 1px #DBDBDB;
+	margin-top: 1em;
+	padding-top: 1em;
 }
 .fca_eoi_layout_1_inputs_wrapper p {
 	margin: .5em 0 !important;
@@ -40,15 +44,17 @@
 	background: none !important;
 	border: 0;
 	box-shadow: none;
+	display: inline-block;
 	font-size: 16px;
 	line-height: 1;
-	width: 82%;
+	width: calc( 97% - 3em );
 	padding: .5em 0;
 	margin: 0;
 }
 .fca_eoi_layout_1_email_field_wrapper .fa,
 .fca_eoi_layout_1_name_field_wrapper .fa {
-	width: 15%;
+	text-align: start;
+	width: 1.3em;
 }
 .fca_eoi_layout_1_submit_button_wrapper {
 	text-align: center;

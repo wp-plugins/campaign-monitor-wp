@@ -1,4 +1,3 @@
-
 jQuery( document ).ready(function( $ ){
     
     $( '.header_power_up_eoi_items' ).click( function() {
@@ -8,5 +7,3 @@ jQuery( document ).ready(function( $ ){
 	} );
     
 })
-
-

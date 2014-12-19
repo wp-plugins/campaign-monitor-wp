@@ -17,10 +17,14 @@
 	margin: 1em !important;
 }
 .fca_eoi_postbox_1_inputs_wrapper {
-	border-bottom: solid 1px #DBDBDB;
 	border-top: solid 1px #DBDBDB;
-	margin: 1em;
-	padding: .5em 0;
+	margin: 1em 1em 0;
+	padding: .5em 0 0;
+}
+.fca_eoi_postbox_1_inputs_wrapper + p {
+	border-top: solid 1px #DBDBDB;
+	margin-top: .5em;
+	padding-top: 1em;
 }
 .fca_eoi_postbox_1_inputs_wrapper p {
 	margin: .5em 0 !important;
@@ -35,15 +39,16 @@
 	width: 49%;
 	display: inline-block;
 }
-html .fca_eoi_postbox_1_email_field_wrapper {
-	float: right;
-}
-html[dir='rtl'] .fca_eoi_postbox_1_email_field_wrapper {
-	float: left;
+.fca_eoi_postbox_1_email_field_wrapper {
+	@if $ltr {
+		float: right;
+	} @else {
+		float: left;
+	}
 }
 .fca_eoi_postbox_1_inputs_wrapper_no_name .fca_eoi_postbox_1_email_field_wrapper {
 	float: none;
-	width: 100%;
+	width: calc( 100% - 2px );
 }
 .fca_eoi_postbox_1_email_field_wrapper input,
 .fca_eoi_postbox_1_email_field_wrapper input:focus,
@@ -52,6 +57,7 @@ html[dir='rtl'] .fca_eoi_postbox_1_email_field_wrapper {
 	background: none !important;
 	border: 0;
 	box-shadow: none;
+	display: inline-block;
 	font-size: 16px;
 	line-height: 1;
 	margin: 0;
@@ -60,10 +66,12 @@ html[dir='rtl'] .fca_eoi_postbox_1_email_field_wrapper {
 }
 .fca_eoi_postbox_1_email_field_wrapper .fa,
 .fca_eoi_postbox_1_name_field_wrapper .fa {
-	width: 2em;
+	text-align: start;
+	width: 1.3em;
 }
 .fca_eoi_postbox_1_submit_button_wrapper {
 	text-align: center;
+	width: 100%;
 }
 .fca_eoi_postbox_1_submit_button_wrapper input{
 	border: solid 1px transparent !important;

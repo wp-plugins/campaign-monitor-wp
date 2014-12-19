@@ -53,7 +53,7 @@ $layout = array(
 			'.fca_eoi_postbox_1 .fca_eoi_postbox_1_submit_button_wrapper input' => array(
 				'font-size' => array( __('Font Size'), '14px'),
 				'color' => array( __( 'Font Color' ), '#963' ),
-				'background-color' => array( __( 'Border Color' ), '#f5d03b' ),
+				'background-color' => array( __( 'Color' ), '#f5d03b' ),
 				'border-color' => array( __( 'Border Color' ), '#EEC22B' ),
 			),
 			'.fca_eoi_postbox_1 .fca_eoi_postbox_1_submit_button_wrapper input:hover' => array(

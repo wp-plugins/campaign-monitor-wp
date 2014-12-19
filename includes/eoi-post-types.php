@@ -7,7 +7,7 @@ class EasyOptInsPostTypes {
 	public function __construct( $settings ) {
 
 		$this->settings = $settings;
-
+                                                
 		$providers_available = array_keys( $this->settings[ 'providers' ] );
 
 		// Register custom post type
@@ -62,6 +62,12 @@ class EasyOptInsPostTypes {
 		foreach ( $providers_available as $provider ) {
 			add_filter( 'fca_eoi_alter_admin_notices', $provider . '_admin_notices', 10, 1 );
 		} 
+
+		// Handle licensing
+		if( count( $providers_available ) > 1 ) {
+			require $this->settings[ 'plugin_dir' ] . 'includes/licensing.php';
+			new  EasyOptInsLicense( $this->settings );
+		}
 	}
 
 	public function more_settings() {
@@ -286,7 +292,15 @@ class EasyOptInsPostTypes {
 				include $layout_path . '/layout.php';
 				$layout[ 'css' ] = file_exists( $layout_path . '/layout.css' )
 					? file_get_contents( $layout_path . '/layout.css')
-					: '';
+					: ''
+				;
+				// Add $ltr SASS variable
+				$layout[ 'css' ] = sprintf( '$ltr: %s;', is_rtl() ? 'false' : 'true' )
+					. $layout[ 'css' ]
+				;
+				$scss = new scssc();
+				$scss->setFormatter("scss_formatter_compressed");
+				$layout[ 'css' ] = $scss->compile( $layout[ 'css' ] );
 				$layout[ 'template' ] = file_get_contents( $layout_path . '/layout.html');
 				$layout[ 'template' ] = str_replace(
 					array(
@@ -319,7 +333,7 @@ class EasyOptInsPostTypes {
 				$layout_output_tpl = '
 					<div
 						class="fca_eoi_layout has-tip"
-						data-layout-id=":id" data-layout-type=":type" title="Your theme’s built-in form styling will be used." data-tooltip				
+						data-layout-id=":id" data-layout-type=":type"				
 					>
 						<img src=":src" />
 						<h3>:name</h3>
@@ -372,7 +386,13 @@ class EasyOptInsPostTypes {
 									$( destination ).closest( "p" ).hide();
 
 									$( document ).on( "change", source, function() {
-										var c = tinycolor( $(this).val() );'
+										var v = $(this).val();
+										if( ! v ) {
+											$( destination ).val( "" );
+											return ;
+										}
+
+										var c = tinycolor( v );'
 						;
 						foreach ( $autocolor[ 'operations'] as $op => $val ) {
 							$layout_output .= '
@@ -380,7 +400,7 @@ class EasyOptInsPostTypes {
 										';
 						}
 						$layout_output .= '
-										$( destination ).val( c.toString() )
+										$( destination ).val( c.toString() );
 										$( destination ).blur();
 									} );
 								} );
@@ -598,7 +618,7 @@ class EasyOptInsPostTypes {
 			, null
 			, array( 'in' => 'p' )
 		);
-		k_selector( 'fca_eoi[publish_postbox]', K::get_var( 'publish_postbox', $fca_eoi, array( 'post' ) ) );
+		k_selector( 'fca_eoi[publish_postbox]', K::get_var( 'publish_postbox', $fca_eoi, array() ) );
 		echo '</div>';
 
 		// Light boxes
@@ -627,7 +647,7 @@ class EasyOptInsPostTypes {
 			, null
 			, array( 'in' => 'p' )
 		);
-		k_selector( 'fca_eoi[publish_lightbox]', K::get_var( 'publish_lightbox', $fca_eoi, array( 'post' ) ) );
+		k_selector( 'fca_eoi[publish_lightbox]', K::get_var( 'publish_lightbox', $fca_eoi, array() ) );
 		echo '</div>';
 	}
 
@@ -877,8 +897,12 @@ class EasyOptInsPostTypes {
 				}
 			}
 
-			// Sanitize custom CSS
-			$meta[ 'custom_css' ] = sanitize_text_field( K::get_var( 'custom_css', $meta ) );
+			// Keep only the current layout inforamtion
+			foreach ( $meta as $k => $v ) {
+				if( preg_match( '|^[a-z]+_[0-9]+$|', $k ) && $k !== $meta[ 'layout' ] ) {
+					unset( $meta[ $k ] );
+				}
+			}
 
 			// Make sure emtpy value for publish_postbox or publish_lightbox are saved as array(-1)
 			if( ! K::get_var( 'publish_postbox' , $meta, array() ) ) {
@@ -889,6 +913,8 @@ class EasyOptInsPostTypes {
 			}
 
 			add_post_meta( $post->ID, 'fca_eoi', $meta );
+			add_post_meta( $post->ID, 'fca_eoi_layout', $meta[ 'layout' ] );
+			add_post_meta( $post->ID, 'fca_eoi_provider', $meta[ 'provider' ] );
 		}
 	}
 
@@ -1246,6 +1272,11 @@ class EasyOptInsPostTypes {
 
 		global $post;
 
+		// Work only when viewing a post of any type
+		if ( empty( $post ) ) {
+			return $content;
+		}
+
 		// Post details
 		$post_ID = $post->ID;
 		$post_type = get_post_type( $post_ID );
@@ -1263,11 +1294,11 @@ class EasyOptInsPostTypes {
 		}
 
 		$fca_eoi_last_99_forms = array();
-		foreach (query_posts( 'posts_per_page=99&post_type=easy-opt-ins' ) as $i => $f ) {
+		foreach (get_posts( 'posts_per_page=99&post_type=easy-opt-ins' ) as $i => $f ) {
 			$fca_eoi_last_99_forms[ $i ][ 'post' ] = $f;
 			$fca_eoi_last_99_forms[ $i ][ 'fca_eoi' ] = get_post_meta( $f->ID, 'fca_eoi', true );
 		}
-		wp_reset_query();
+		// wp_reset_query();
 
 		// Append postcode shortcode when the conditions match
 		foreach( $fca_eoi_last_99_forms as $f) {

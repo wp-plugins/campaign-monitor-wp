@@ -1,7 +1,5 @@
 .fca_eoi_layout_2 {
-	background-color: #eee;
 	padding: .8em;
-        width: 90%;
 }
 .fca_eoi_layout_2 h3 {
 	box-sizing: content-box;
@@ -17,8 +15,6 @@
 .fca_eoi_layout_2 .ribbon {
 	font-size: 24px !important;
 	position: relative;
-	background: #3297e1;
-	color: #ffffff;
 	text-align: center;
 	padding: .75em 2em !important;
 	margin: 0 0 3em;
@@ -32,7 +28,7 @@
 	position: absolute;
 	display: block;
 	border-style: solid;
-	border-color: #256fa6 transparent transparent transparent;
+	border-color: transparent;
 	bottom: -.5em;
 }
 .fca_eoi_layout_2 .ribbon .ribbon-content:before {
@@ -53,7 +49,6 @@
 }
 .fca_eoi_layout_2_email_field_wrapper,
 .fca_eoi_layout_2_name_field_wrapper {
-	background: white;
 	padding: .5em !important;
 	border: solid 1px transparent;
 }
@@ -74,14 +69,13 @@
 .fca_eoi_layout_2_name_field_wrapper input:focus {
 	border-color: transparent;
 	box-shadow: none;
+	display: inline-block;
 	margin: 0 .5em;
 	padding: 0;
 	width: calc(100% - 3em);
-        font-size: inherit;
 }
 .fca_eoi_layout_2_submit_button_wrapper input {
 	background: none;
-	background-color: #F00;
 	border-width: 0;
 	border-bottom: solid 3px transparent;
 }
@@ -92,12 +86,10 @@
 	border-color: transparent;
 	border-radius: 0;
 	box-shadow: none;
-	color: white;
 	font-size: 1.4em;
 	font-weight: bold;
 	padding: .5em;
 	width: 100%;
-        white-space: normal;
 }
 .fca_eoi_layout_2_privacy_copy_wrapper {
 	text-align: center;
@@ -107,7 +99,3 @@
 	text-align: center;
 }
 ::-webkit-input-placeholder{color:inherit;opacity:.7}:-moz-placeholder{color:inherit;opacity:.7}::-moz-placeholder{color:inherit;opacity:.7}:-ms-input-placeholder{color:inherit;opacity:.7}
-
-.fca_eoi_form input {
-     display: inline; 
-}

@@ -14,12 +14,11 @@ class EasyOptInsPointer {
     private $settings;
 
     public function __construct( $settings=null ) {
-
+        
+        global $pagenow;
+        
         add_action('wp_ajax_tt_eoi_mailing_list', array($this, 'tt_eoi_mailing_list_pointer_ajax'));
 
-        // Load mailing list pointer popup
-        global $current_screen;
-        global $pagenow;
         // Show mailing list pointer popup once
         $mailing_list = get_option('tt_eoi_mailing_list');
         if ('easy-opt-ins' == $settings['post_type'] &&
