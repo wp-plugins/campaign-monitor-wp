@@ -1,13 +1,13 @@
-=== Easy Opt-ins For Campaign Monitor - WordPress Plugin ===
+=== Campaign Monitor Optin Cat ===
 Contributors: davidhme, fatcatapps
-Donate link: http://fatcatapps.com/easyoptins?utm_campaign=eoi-description-cta&utm_source=eoi-free-campaign-monitor&utm_medium=referral
-Tags: campaign monitor, campaign monitor opt-in, campaign monitor wordpress plugin, campaign monitor widget, campaign monitor wordpress subscribe plugin, campaign monitor for wordpress, campaign monitor form, Fatcat Apps
+Donate link: https://fatcatapps.com/optincat?utm_campaign=description%2Bcta&utm_source=https%3A%2F%2Fwordpress.org%2Fplugins%2Fcampaign-monitor-wp%2F&utm_medium=referral
+Tags: campaign monitor, campaign monitor opt-in, campaign monitor wordpress plugin, campaign monitor widget, campaign monitor wordpress subscribe plugin, campaign monitor for wordpress, popup, lightbox popup
 
-Author URI: http://fatcatapps.com/
-Plugin URI: http://fatcatapps.com/eoi
+Author URI: https://fatcatapps.com/
+Plugin URI: https://fatcatapps.com/optincat?utm_campaign=description%2Bcta&utm_source=https%3A%2F%2Fwordpress.org%2Fplugins%2Fcampaign-monitor-wp%2F&utm_medium=referral
 Requires at least: 3.9.1
-Tested up to: 4.0.1
-Stable tag: 1.1.4
+Tested up to: 4.1
+Stable tag: 1.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -15,18 +15,22 @@ The Opt-ins For Campaign Monitor WordPress Plugin Helps You Get More Email Subsc
  
 == Description ==
 
-= Easy Opt-ins For Campaign Monitor WordPress Plugin =
+= Campaign Monitor Optin Cat WordPress Plugin =
 
-The **Easy Opt-ins For Campaign Monitor** WordPress Plugin lets you create gorgeous Campaign Monitor sign-up forms to your WordPress site in minutes.
+The **Campaign Monitor Optin Cat** WordPress Plugin lets you create gorgeous Campaign Monitor sign-up forms to your WordPress site in minutes.
 
+[youtube https://www.youtube.com/watch?v=9d3HPWbbn58]
 
 = Opt-in Types =
 
 1.   Post boxes let you add a Campaign Monitor form to a post or page using shortcodes or by automatically appending the form to the bottom of your post or page.
 2.   Sidebar widgets. You can add Campaign Monitor forms to your sidebar using widgets.
+3.   Popups. Capture more emails using lightbox popups.
+
 
 = Features =
 
+*   Popup targeting based on time spent on page and frequency.
 *   Intuitive user interface, set up your Campaign Monitor forms in seconds.
 *	Full customization options, such as the ability to change your copy, font-size, colors and more.
 *   Campaign Monitor form works with responsive sites.
@@ -39,6 +43,18 @@ The **Easy Opt-ins For Campaign Monitor** WordPress Plugin lets you create gorge
 *   You can customize your Campaign Monitor forms using our "Custom CSS" feature.
 *   You can inherit your theme's form styling by choosign our "No CSS" layout.
 
+
+> #### Optin Cat Premium
+> Optin Cat Premium comes with the following features.<br />
+>
+> Lots Of Additional Beatiful Layout & Design Options.<br />
+> Advanced Popup Targeteting: Number of pageviews during this visit, Scrolled down on current page (%), Only show on specific posts/pages/categories, Never show on specific posts/pages/categories.<br />
+> Two Step Optin Feature: Trigger a Popup Optin Form after the user clicks on a hyperlink.<br />
+> Priority Email Support.<br />
+>
+>
+> [Learn more about Easy Opt-ins Premium >>](https://fatcatapps.com/optincat?utm_campaign=description%2Bcta&utm_source=https%3A%2F%2Fwordpress.org%2Fplugins%2Fcampaign-monitor-wp%2F&utm_medium=referral)
+
 = Roadmap =
 
 We've got a bunch of feature ideas, such as more opt-in form designs and various types of signup forms. We'd love to hear your suggestions, feel free to share them in the support forum.
@@ -46,20 +62,10 @@ We've got a bunch of feature ideas, such as more opt-in form designs and various
 = Requirements =
 In order to use this plugin you'll need a Campaign Monitor account + Campaign Monitor API key.
 
-> #### Easy Opt-ins Premium
-> Easy Opt-ins comes with the following features.<br />
->
-> 4 Additional Gorgeous Layouts.<br />
-> Sticky sidebar widget.<br />
-> Priority Support.<br />
->
-> [Learn more about Easy Opt-ins Premium >>](http://fatcatapps.com/easyoptins?utm_campaign=eoi-description-cta&utm_source=eoi-free-campaign-monitor&utm_medium=referral)
-
 = Relevant Links =
 
-*   [FatcatApps.com](http://fatcatapps.com/)
+*   [FatcatApps.com](https://fatcatapps.com/)
 *	[Other plugins by FatcatApps](https://profiles.wordpress.org/fatcatapps/#content-plugins)
-*	[FatcatApps founder, David Hehenberger, on Twitter](https://twitter.com/davidhme)
 
 == Screenshots ==
 
@@ -71,9 +77,16 @@ In order to use this plugin you'll need a Campaign Monitor account + Campaign Mo
 
 1. Upload the plugin to the `/wp-content/plugins/` directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
-3. In your sidebar, select 'Opt In Forms -> Add New' to create a new table
+3. In your sidebar, select 'Optin Cat -> Add New' to create a new table
 
 == Changelog ==
+
+= 1.2 =
+* Renamed plugin to Optin Cat
+* Added a new layout
+* Added Popup Feature
+* Numerous Bugfixes
+* Numerous User Interface Improvements
 
 = 1.1.4 =
 * Fixed bugs introduced with 1.1.3

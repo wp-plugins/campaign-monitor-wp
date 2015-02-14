@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @package    Easy Opt Ins
+ * @package    Optin Cat
  */
 
 $layout = array(

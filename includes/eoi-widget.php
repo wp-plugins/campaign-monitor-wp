@@ -35,7 +35,7 @@ class EasyOptInsWidget extends WP_Widget {
 		
 		$this->WP_Widget(
 			'easy-opt-in-widget'
-			, 'Easy Opt-ins Widget'
+			, 'Optin Cat Sidebar Widget'
 			, $widget_ops, $control_ops
 		);
 	}

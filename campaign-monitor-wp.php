@@ -1,11 +1,11 @@
 <?php
 /*
-    Plugin Name: Easy Opt-ins For Campaign Monitor
-    Plugin URI: http://fatcatapps.com/easyoptins
-    Description: Easy Opt-ins For Campaign Monitor Helps You Get More Email Subscribers. Create Beautiful Campaign Monitor Opt-In Forms In Less Than 2 Minutes.
+    Plugin Name: Campaign Monitor Optin Cat
+    Plugin URI: https://fatcatapps.com/optincat
+    Description: Campaign Monitor Optin Cat Helps You Get More Email Subscribers. Create Beautiful Campaign Monitor Opt-In Forms In Less Than 2 Minutes.
     Author: Fatcat Apps
-    Version: 1.1.4
-    Author URI: http://http://fatcatapps.com/
+    Version: 1.2
+    Author URI: https://fatcatapps.com/
 */
 
 // define( 'FCA_EOI_DEBUG', true );
@@ -29,8 +29,9 @@ if ( ! class_exists ( 'Mustache_Engine' ) ) {
 /**
  * Include scssphp
  * 
- * Latest version requires PHP 5.3 
+ * Latest version requires PHP 5.3
  * Version 0.0.15 works with PHP 5.2
+ * We detect PHP > 5.3 by checking the constant __DIR__
  */
 if ( ! class_exists ( 'scssc' ) ) {
     if( defined( '__DIR__' ) ) {
@@ -40,11 +41,24 @@ if ( ! class_exists ( 'scssc' ) ) {
     }
 }
 
+/**
+ * Include and instanciate Mobile Detect
+ */
+if ( ! class_exists ( 'Mobile_Detect' ) ) {
+    require plugin_dir_path( __FILE__ ) . 'includes/classes/Mobile-Detect/Mobile_Detect.php';
+}
+
 if( ! class_exists( 'DhEasyOptIns' ) ) {
 class DhEasyOptIns {
 
-    var $ver = '1.1.4';
-    var $shortcode = 'easy-opt-in';
+    var $ver = '1.2';
+    var $distro = '';
+    var $shortcode = 'optin-cat';
+    var $shortcode_aliases = array(
+        'easy-opt-in',
+        'optincat',
+        'opt-in-cat',
+    );
     var $settings;
     var $provider = '';
     var $providers = array();
@@ -84,6 +98,15 @@ class DhEasyOptIns {
             $this->provider = $this->settings[ 'provider' ] = $providers_available[ 0 ];
         }
 
+        // Distributions
+        if( 1 == count( $providers_available ) ) {
+            $this->distro = 'free';
+            $this->settings['distribution'] = 'free';
+        } else {
+            $this->distro = 'premium';
+            $this->settings['distribution'] = 'premium';
+        }
+
         // Add options that are stored in DB if any
         $this->settings[ 'eoi_settings' ] = $eoi_settings;
 
@@ -95,10 +118,12 @@ class DhEasyOptIns {
         // Load extensions
         $post_types = new EasyOptInsPostTypes($this->settings);
         $fca_eoi_shortcodes = new EasyOptInsShortcodes($this->settings);
-        $widget     = new EasyOptInsWidgetHelper($this->settings);
+        $widget = new EasyOptInsWidgetHelper($this->settings);
         
-        // Load subscribing banner
-        $pointer = new EasyOptInsPointer( $this->settings );
+        // Load subscribing banner for free users
+        if( 1 == count( $providers_available ) ) {
+            $pointer = new EasyOptInsPointer( $this->settings );
+        }
         
         //Load tour pointer
         //$tour_pointer = new EOITourPointer($this->settings );
@@ -139,19 +164,21 @@ class DhEasyOptIns {
         $this->settings['plugin_dir'] = plugin_dir_path( __FILE__ );
         $this->settings['plugin_url'] = plugins_url('', __FILE__);
         $this->settings['shortcode']  = $this->shortcode;
+        $this->settings['shortcode_aliases']  = $this->shortcode_aliases;
         $this->settings['version']    = $this->ver;
         $this->settings['provider']   = $this->provider;
         // Load all providers
         foreach ( glob( $this->settings[ 'plugin_dir' ] . 'providers/*', GLOB_ONLYDIR ) as $provider_path ) {  
-            $provider_id = basename( $provider_path );
+            $provider_id = basename(  $provider_path );
             require_once "$provider_path/provider.php";
             $this->settings[ 'providers' ][ $provider_id ] = call_user_func( "provider_$provider_id" );
         }
         // Load all powerups
         foreach ( glob( $this->settings[ 'plugin_dir' ] . 'powerups/*', GLOB_ONLYDIR ) as $powerup_path ) {  
-            $powerup_id = basename( $powerup_path );
+            $powerup_id = basename( $powerup_path );            
+            $powerup_id = preg_replace('/(\d+)_/', '', $powerup_id);
             require_once "$powerup_path/powerup.php";
-            $this->esttings[ 'powerups' ][ $powerup_id ] = call_user_func( "powerup_$powerup_id", $this->settings );
+            $this->settings[ 'powerups' ][ $powerup_id ] = call_user_func( "powerup_$powerup_id", $this->settings );
         }
         paf_pages( array( 'eoi_powerups' => array(
             'title' => __( 'Power Ups Settings' ),

@@ -229,7 +229,7 @@ class EOITourPointer {
 				$fca_eoi_publish_tour_item =  array(
 					'target'   => '#menu-appearance',
 					'options' => array(
-						'content' => '<h3> Publish </h3>' . '<p>' . __( 'You can publish your opt-in widget by going to “Appearance -> Widgets” and choosing the “Easy Opt-ins Widget”.' ) . '</p>'
+						'content' => '<h3> Publish </h3>' . '<p>' . __( 'You can publish your opt-in widget by going to “Appearance -> Widgets” and choosing the “Optin Cat Sidebar Widget”.' ) . '</p>'
 						,
 						'position' => array( 'edge' => 'top', 'align' => 'center' ),
 						'pointerClass' => 'fca_eoi_tour_pointer_style'

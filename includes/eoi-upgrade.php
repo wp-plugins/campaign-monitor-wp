@@ -15,25 +15,25 @@ class EasyOptInsUpgrade {
         global $pagenow;
         $this->settings = $settings;
         
-        $this->fca_maketing_page_left_menu = 'http://fatcatapps.com/easyoptins?utm_campaign=eoi-left-menu&utm_source=eoi-free-mailchimp&utm_medium=referral';
-        $this->fca_maketing_page_top_ad = 'http://fatcatapps.com/easyoptins?utm_campaign=eoi-top-ad&utm_source=eoi-free-mailchimp&utm_medium=referral';
+        $this->fca_maketing_page_left_menu = 'https://fatcatapps.com/optincat?utm_campaign=wp%2Bsubmenu&utm_source=Optin%2BCat%2BFree&utm_medium=plugin';
+        $this->fca_maketing_page_top_ad = 'https://fatcatapps.com/optincat?utm_campaign=plugin%2Btop%2Bad&utm_source=Optin%2BCat%2BFree&utm_medium=plugin';
         
         add_action( 'admin_menu', array( $this, 'fca_eoi_upgrade_to_premium_menu' ));
         add_action( 'admin_footer', array( $this,  'fca_eoi_upgrade_to_premium_menu_js' ));
         
         if ('easy-opt-ins' == $settings['post_type'] &&
                 (( isset($_REQUEST['action']) && 'edit' == $_REQUEST['action']) || 'post-new.php' == $pagenow || 'edit.php' == $pagenow ) ) {
-                 add_action( 'admin_notices', array( $this, 'information_notice' ) );
+                 add_action( 'admin_notices', array( $this, 'fca_eoi_information_notice' ) );
         }
     }
     
     function fca_eoi_upgrade_to_premium_menu() {
         
         $page_hook = add_submenu_page( 'edit.php?post_type=easy-opt-ins', __( 'Upgrade to Premium'), __( 'Upgrade to Premium' ), 'manage_options', 'eoi_premium_upgrade', array( $this, 'fca_eoi_upgrade_to_premium' ));
-        add_action( 'load-' . $page_hook , array( $this, 'fca_eoi_upgrade_to_premium' ));
+        add_action( 'load-' . $page_hook , array( $this, 'fca_eoi_upgrade_to_premium_redirect' ));
      }
    
-    function fca_eoi_upgrade_to_premium() {
+    function fca_eoi_upgrade_to_premium_redirect() {
         
         wp_redirect( $this->fca_maketing_page_left_menu, 301 );
         exit();
@@ -68,7 +68,7 @@ class EasyOptInsUpgrade {
     <?php 
     }
     
-    function information_notice () {
-        echo '<div class="update-nag">' . sprintf( __( 'Easy Opt-ins Premium comes with lots of additional layouts, and various conversion increasing features. Special launch discount. <a href="%s" target="_blank">Learn more</a>' ), $this->fca_maketing_page_top_ad ) . '</div>';
+    function fca_eoi_information_notice () {
+        echo '<div class="updated" style="padding-top:5px;padding-bottom:5px;line-height:22px;text-align:center;border-color:#FDFDFD;background-color:#FDFDFD;">' . sprintf( __( '<p><strong style="font-size:18px;">Wanna Get More Optins?</strong></p><p>Optin Cat Premium Increases Conversions With More Layouts, Advanced Popup Targeting, 2-Step-Optins, Email Support And More.</p><p><a class="button button-primary button-large" style="padding-left:30px;padding-right:30px;font-weight:bold;" href="%s" target="_blank">LEARN MORE</a></p>' ), $this->fca_maketing_page_top_ad ) . '</div>';
     }    
 }

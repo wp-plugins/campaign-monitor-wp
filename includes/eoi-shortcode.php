@@ -11,6 +11,11 @@ class EasyOptInsShortcodes {
 		// Add shortcode
 		add_shortcode( $this->settings[ 'shortcode' ], array( $this, 'shortcode_content' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+
+		// Add shortcode aliases
+		foreach ( $settings[ 'shortcode_aliases' ] as $shortcode) {
+			add_shortcode( $shortcode, array( $this, 'shortcode_content' ) );
+		}
 	}
 
 	public function enqueue_assets() {
@@ -52,6 +57,7 @@ class EasyOptInsShortcodes {
 
 		// Get template
 		$layout_id = $fca_eoi_meta[ 'layout' ];
+		$layout_type = preg_replace( '/_\d+$/', '', $layout_id);
 		$layout_path_arr = glob( $this->settings[ 'plugin_dir' ] . "layouts/*/$layout_id", GLOB_ONLYDIR );
 		$layout_path = array_pop( $layout_path_arr );
 		if( ! file_exists( $layout_path . '/layout.html' )) return;
@@ -87,8 +93,9 @@ class EasyOptInsShortcodes {
 				'</form>',
 			),
 			array(
-				sprintf( '<div id="fca_eoi_form_%s" style="margin:0 !important; padding: 0 !important;"><form method="post" action="" class="fca_eoi_form fca_eoi_%s" data-fca_eoi_list_id="%s" data-fca_eoi_thank_you_page="%s" novalidate><input type="hidden" name="fca_eoi_form_id" value="%s" />'
+				sprintf( '<div id="fca_eoi_form_%s" style="margin:0 !important; padding: 0 !important;"><form method="post" action="" class="fca_eoi_form fca_eoi_%s fca_eoi_%s" data-fca_eoi_list_id="%s" data-fca_eoi_thank_you_page="%s" novalidate><input type="hidden" name="fca_eoi_form_id" value="%s" />'
 					, $atts[ 'id' ]
+					, $layout_type
 					, $layout_id
 					, K::get_var( 'list_id', $fca_eoi_meta )
 					, get_permalink( K::get_var( 'thank_you_page', $fca_eoi_meta ) ) 
@@ -102,7 +109,7 @@ class EasyOptInsShortcodes {
 				'<input type="email" name="email" placeholder="{{{email_placeholder}}}" 	/>',
 				'<input type="submit" value="{{{button_copy}}}" />',
 				'<span >{{{privacy_copy}}}</span>',
-				'{{#show_fatcatapps_link}}<p class="fca_eoi_' . $layout_id . '_fatcatapps_link_wrapper"><a href="http://fatcatapps.com/eoi" target="_blank">Powered by fatcat apps</a></p>{{/show_fatcatapps_link}}',
+				'{{#show_fatcatapps_link}}<p class="fca_eoi_' . $layout_id . '_fatcatapps_link_wrapper"><a href="http://fatcatapps.com/eoi" target="_blank">Powered by Optin Cat</a></p>{{/show_fatcatapps_link}}',
 				'<input type="hidden" name="id" value="' . $atts[ 'id' ] . '"><input type="hidden" name="fca_eoi" value="1"></form></div>',
 			),
 			$template

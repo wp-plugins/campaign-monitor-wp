@@ -59,7 +59,7 @@ div[id^=fca_eoi_] fieldset.k {
 	max-width: 600px;
 }
 #fca_eoi_preview_form[class^=fca_eoi_lightbox_] {
-	max-width: 500px;
+	max-width: 650px;
 }
 html[dir=rtl] #fca_eoi_preview {
 	float: right;
@@ -125,6 +125,26 @@ html[dir=rtl] #fca_eoi_preview {
 }
 .fca_eoi_toggle input{
 	display: none;
+}
+.fca_eoi_and {
+	font-weight: bold;
+	margin: .5em 1em;
+	text-transform: uppercase;
+}
+.fca_lightbox_condition input,
+.fca_lightbox_condition select,
+.fca_lightbox_condition .select2 {
+	margin: 0 .25em;
+}
+.fca_lightbox_condition select:first-child {
+	position: relative;
+	bottom: 1px;
+}
+.fca_eoi_help {
+	color: #666;
+	font-size: 13px;
+	font-style: italic;
+	margin: .25em .35em;
 }
 /* Remove screen options */
 #screen-options-link-wrap {
