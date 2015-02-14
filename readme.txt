@@ -7,7 +7,7 @@ Author URI: https://fatcatapps.com/
 Plugin URI: https://fatcatapps.com/optincat?utm_campaign=description%2Bcta&utm_source=https%3A%2F%2Fwordpress.org%2Fplugins%2Fcampaign-monitor-wp%2F&utm_medium=referral
 Requires at least: 3.9.1
 Tested up to: 4.1
-Stable tag: 1.2.0.1
+Stable tag: 1.2.0.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,8 +81,15 @@ In order to use this plugin you'll need a Campaign Monitor account + Campaign Mo
 
 == Changelog ==
 
-= 1.2.0.1 =
+= 1.2.0.2 = 
 * Bugfix
+
+= 1.2 =
+* Renamed plugin to Optin Cat
+* Added a new layout
+* Added Popup Feature
+* Numerous Bugfixes
+* Numerous User Interface Improvements
 
 = 1.1.4 =
 * Fixed bugs introduced with 1.1.3

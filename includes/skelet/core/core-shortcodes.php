@@ -6,17 +6,18 @@
 
 // Load the TinyMCE plugin
 add_filter( 'mce_external_plugins', 'skelet_add_tinyMCE_plugin' );
-function skelet_add_tinyMCE_plugin() {
+function skelet_add_tinyMCE_plugin( $buttons ) {
 
 	global $paf_shortcodes;
 
 	if( $paf_shortcodes ) {
-		return array( 'skelet' => site_url( '?skelet=tinyMCE_js' ) );
+		$buttons[ 'skelet' ] = site_url( '?skelet=tinyMCE_js' );
 	}
+	return $buttons;
 }
 
-// Add endpoints
-add_action( 'init', 'skelet_add_endpoint' );
+// Add endpoints rewrite rules
+// add_action( 'init', 'skelet_add_endpoint' );
 function skelet_add_endpoint() {
 
 	$rules = array(
@@ -24,7 +25,7 @@ function skelet_add_endpoint() {
 		'tinyMCE\.php/([a-zA-Z_][a-zA-Z0-9_-]*)' => 'tinyMCE_php&tag=$matches[1]',
 	);
 
-	foreach ($rules as $regex => $redirect ) {
+	foreach ( $rules as $regex => $redirect ) {
 		add_rewrite_rule(
 			sprintf( '^skelet/%s$', $regex )
 			, sprintf( 'index.php?skelet=%s', $redirect )

@@ -3,7 +3,7 @@
 /**
  * Information about the "Naked Form" layout
  * 
- * @package    Easy Opt Ins
+ * @package    Optin Cat
  */
 
 $layout = array(

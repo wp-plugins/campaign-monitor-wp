@@ -7,7 +7,7 @@ class EasyOptInsPostTypes {
 	public function __construct( $settings ) {
 
 		$this->settings = $settings;
-                                                
+
 		$providers_available = array_keys( $this->settings[ 'providers' ] );
 
 		// Register custom post type
@@ -26,7 +26,9 @@ class EasyOptInsPostTypes {
 		add_filter( 'the_content', array( $this, 'live_preview' ) );
 
 		// Scripts and styles
+		add_filter( 'wp_enqueue_scripts', array( $this, 'enqueue' ) );
 		add_filter( 'admin_enqueue_scripts', array( $this, 'admin_enqueue' ) );
+		add_filter( 'admin_enqueue_scripts', array( $this, 'disable_autosave' ) );
 
 		add_action( 'admin_head', array( $this, 'hide_minor_publishing' ) );
 
@@ -53,6 +55,11 @@ class EasyOptInsPostTypes {
 		add_filter( 'enter_title_here', array( $this, 'change_default_title' ) );
 
 		add_filter( 'init', array( $this, 'bind_content_filter' ), 10 );
+
+		add_action( 'init', array( $this, 'cookies' ) );
+		add_filter( 'wp_footer', array( $this, 'show_lightbox' ) );
+		add_action( 'wp_ajax_fca_eoi_lightbox_set_cookie', array( $this, 'fca_eoi_lightbox_set_cookie' ) );
+		add_action( 'wp_ajax_nopriv_fca_eoi_lightbox_set_cookie', array( $this, 'fca_eoi_lightbox_set_cookie' ) );
 
 		foreach ( $providers_available as $provider ) {
 			add_action( 'wp_ajax_fca_eoi_' . $provider . '_get_lists', $provider . '_ajax_get_lists' );
@@ -111,25 +118,22 @@ class EasyOptInsPostTypes {
 	public function register_custom_post_type() {
 
 		$labels = array(
-			'name' => __('Opt-in Forms') ,
-			'singular_name' => __('Opt-in Form') ,
+			'name' => __('Optin Forms') ,
+			'singular_name' => __('Optin Form') ,
 			'add_new' => __('Add New') ,
-			'add_new_item' => __('Add New Opt-in Form') ,
-			'edit_item' => __('Edit Opt-in Form') ,
-			'new_item' => __('New Opt-in Form') ,
-			'all_items' => __('Opt-in Forms') ,
-			'view_item' => __('View Opt-in Form') ,
-			'search_items' => __('Search Opt-in Form') ,
-			'not_found' => __('No Opt-in Form Found') ,
-			'not_found_in_trash' => __('No Opt-in Form Found in Trash') ,
+			'add_new_item' => __('Add New Optin Form') ,
+			'edit_item' => __('Edit Optin Form') ,
+			'new_item' => __('New Optin Form') ,
+			'all_items' => __('All Optin Forms') ,
+			'view_item' => __('View Optin Form') ,
+			'search_items' => __('Search Optin Form') ,
+			'not_found' => __('No Optin Form Found') ,
+			'not_found_in_trash' => __('No Optin Form Found in Trash') ,
 			'parent_item_colon' => '',
-			'menu_name' => __('Opt-in Forms')
+			'menu_name' => __('Optin Cat')
 		);
 		$args = array(
-			'menu_icon' => $this->settings[ 'provider' ] 
-				? "{$this->settings['plugin_url']}/providers/{$this->settings['provider']}/icon.png"
-				: "{$this->settings['plugin_url']}/icon.png"
-			,
+			'menu_icon' => "{$this->settings['plugin_url']}/icon.png",
 			'labels' => $labels,
 			'public' => false,
 			'exclude_from_search' => true,
@@ -243,9 +247,9 @@ class EasyOptInsPostTypes {
 		global $post;
 
 		$layouts_types_labels = array(
-			'widget' => 'Widgets',
+			'widget' => 'Sidebar Widgets',
 			'postbox' => 'Post Boxes',
-			'lightbox' => 'Lightbox Popups',
+			'lightbox' => 'Popups',
 		);
 
 		$fca_eoi = get_post_meta( $post->ID, 'fca_eoi', true );
@@ -323,7 +327,7 @@ class EasyOptInsPostTypes {
 						'<input data-fca-eoi-fieldset-id ="email_field" type="email" placeholder="{{{email_placeholder}}}" />',
 						'<input data-fca-eoi-fieldset-id ="button" type="submit" value="{{{button_copy}}}" />',
 						'<span data-fca-eoi-fieldset-id ="privacy">{{{privacy_copy}}}</span>',
-						'{{#show_fatcatapps_link}}<p class="fca_eoi_' . $layout_id . '_fatcatapps_link_wrapper"><span data-fca-eoi-fieldset-id ="fatcatapps"><a href="#" onclick="javascript:return false">Powered by fatcat apps</a></span></p>{{/show_fatcatapps_link}}',
+						'{{#show_fatcatapps_link}}<p class="fca_eoi_' . $layout_id . '_fatcatapps_link_wrapper"><span data-fca-eoi-fieldset-id ="fatcatapps"><a href="#" onclick="javascript:return false">Powered by Optin Cat</a></span></p>{{/show_fatcatapps_link}}',
 					)
 					, $layout[ 'template' ]
 				);
@@ -579,13 +583,14 @@ class EasyOptInsPostTypes {
 	public function meta_box_content_publish() {
 
 		global $post;
+		$screen = get_current_screen();
 
 		$fca_eoi = get_post_meta( $post->ID, 'fca_eoi', true );
 
 		// Widgets
 		K::wrap(
 			sprintf(
-				__( 'You can publish this opt-in box by going to <a href="%s" target="_blank">Appearance › Widgets</a>')
+				__( 'You can publish this optin box by going to <a href="%s" target="_blank">Appearance › Widgets</a>')
 				, admin_url( 'widgets.php')
 			)
 			, array( 'id' => 'fca_eoi_publish_widget' )
@@ -614,41 +619,400 @@ class EasyOptInsPostTypes {
 			, array( 'style' => 'padding-left: 0px; padding-right: 0px; ' )
 			, array( 'in' => 'h3' )
 		);
-		K::wrap( __( 'Automatically append this opt-in to the following posts, categories and/or pages.' )
+		K::wrap( __( 'Automatically append this optin to the following posts, categories and/or pages.' )
 			, null
 			, array( 'in' => 'p' )
 		);
 		k_selector( 'fca_eoi[publish_postbox]', K::get_var( 'publish_postbox', $fca_eoi, array() ) );
 		echo '</div>';
 
-		// Light boxes
+		// Lightboxes
+
+		switch ( $this->settings['distribution'] ) {
+		case 'free':
+			$conditions_options = array(
+				'time_on_page' => 'Time on page is at least (second)',
+			);
+			break;
+		case 'premium':
+			$conditions_options = array(
+				'pageviews' => 'Number of pageviews during this visit at least',
+				'scrolled_percent' => 'Scrolled down on current page at least (%)',
+				'time_on_page' => 'Time on page is at least (second)',
+				'include' => 'Only show popup on the following posts/pages',
+				'exclude' => 'Never show popup on the following posts/pages',
+			);
+			break;
+		}
+
+		$fca_eoi[ 'publish_lightbox' ] = K::get_var( 'publish_lightbox', $fca_eoi, array() );
 		echo '<div id ="fca_eoi_publish_lightbox">';
-		K::wrap( __( 'Shortcode')
-			, array( 'style' => 'padding-left: 0px; padding-right: 0px; ' )
-			, array( 'in' => 'h3' )
-		);
-		K::wrap( __( "Copy and paste beneath shortcode anywhere on your site where you'd like this opt-in form to appear." )
-			, null
-			, array( 'in' => 'p' )
-		);
-		K::input( ''
+
+		if ( 'premium' === $this->settings[ 'distribution' ] ) {
+			K::input( 'fca_eoi[publish_lightbox_mode]'
+				, array(
+					'type' => 'radio',
+					'value' => 'two_step_optin',
+					'checked' => 'two_step_optin' === K::get_var( 'publish_lightbox_mode', $fca_eoi ),
+				)
+				, array(
+					'format' => '<p><label>:input Two-Step Optin (Trigger popup only when the visitor clicks on a call to action link)</label></p>',
+				)
+			);
+		}
+
+		K::input( 'fca_eoi[publish_lightbox_mode]'
 			, array(
-				'class' => 'regular-text autoselect',
-				'readonly' => 'readonly',
-				'value' => "[easy-opt-ins id=$post->ID]",
+				'type' => 'radio',
+				'value' => 'traditional_popup',
+				'checked' => 'traditional_popup' === K::get_var( 'publish_lightbox_mode', $fca_eoi ),
 			)
-			, array( 'format' => '<p>:input</p>', )
+			, array(
+				'format' => '<p><label>:input Traditional Popup (Trigger popup when the visitor is browsing your site)</label></p>',
+			)
 		);
-		K::wrap( __( 'Append to post or page')
-			, array( 'style' => 'padding-left: 0px; padding-right: 0px; ' )
-			, array( 'in' => 'h3' )
-		);
-		K::wrap( __( 'Automatically append this opt-in to the following posts, categories and/or pages.' )
-			, null
-			, array( 'in' => 'p' )
-		);
-		k_selector( 'fca_eoi[publish_lightbox]', K::get_var( 'publish_lightbox', $fca_eoi, array() ) );
-		echo '</div>';
+		?>
+		
+		<hr />
+
+		<?php // Condition always present ?>
+		<div id="fca_eoi_publish_lightbox_mode_traditional_popup" class="hidden">
+			<fieldset style='padding: .5%; margin:.5% 0; box-shadow: 0 0 1px rgba(0, 0, 0, .2); width: 97%;background:#F7F7F7;'>
+				<span style="display:inline-block; width:39%;margin: 0 .25em;"><?php _e('Show popup'); ?></span><?php
+				K::select(
+					'fca_eoi[publish_lightbox][show_every]'
+					, array(
+						'style' => 'width:40%;margin: 0 1em;'
+					)
+					, array(
+						'options' => array(
+							'never' => __( 'Never' ),
+							'always' => __( 'On every pageview' ),
+							'session' => __( 'Once per visit' ),
+							'day' => __( 'Once per day' ),
+							'month' => __( 'Once per month' ),
+							'once' => __( 'Only once' ),
+						),
+						'selected' => K::get_var( 'show_every', $fca_eoi[ 'publish_lightbox' ] ),
+					)
+				);
+				?>
+				<p class="fca_eoi_help"><?php _e( 'Set how frequently to show the popup. (Never means the popup is deactivated.)' ); ?></p>
+			</fieldset>
+			<?php
+			// Saved conditions
+			$saved_conditions = array();
+			$saved_conditions = K::get_var( 'conditions', $fca_eoi[ 'publish_lightbox' ], array() );
+
+			// Add default if creating a new form
+			if ( 'add' === $screen->action ) {
+				$saved_conditions = array(
+					'_'.time().'001' => array(
+						'parameter' => 'pageviews',
+						'value' => '2',
+					),
+					'_'.time().'002' => array(
+						'parameter' => 'scrolled_percent',
+						'value' => '30',
+					),
+					'_'.time().'003' => array(
+						'parameter' => 'time_on_page',
+						'value' => '30',
+					),
+				);
+			}
+
+			foreach ( $saved_conditions as $condition_id => $condition ) {
+				// Skip conditions that are not available in version
+				if ( ! array_key_exists( $condition[ 'parameter' ], $conditions_options ) ) {
+					continue;
+				}
+				$condition_HTML_inner = ''
+					. K::select( "fca_eoi[publish_lightbox][conditions][$condition_id][parameter]"
+						, array(
+							'style' => 'width:40%',
+						)
+						, array(
+							'selected' => $condition[ 'parameter' ],
+							'options' => $conditions_options,
+							'return' => 'true',
+						)
+					)
+					. (
+						( in_array( $condition[ 'parameter' ], array( 'include', 'exclude' ) ) )
+							? k_selector( "fca_eoi[publish_lightbox][conditions][$condition_id][value]"
+								, K::get_var( 'value', $condition, array() )
+								, true
+							)
+							: K::input( "fca_eoi[publish_lightbox][conditions][$condition_id][value]"
+								, array(
+									'class' => 'medium-text',
+									'type' => 'text',
+									'value' => $condition[ 'value' ],
+									'style' => 'width:40%',
+								)
+								, array(
+									'return' => true,
+								)
+							)
+						)
+					. ' '
+					. '<span class="button fca_remove_lightbox_condition"><span style="vertical-align:text-bottom" class="dashicons dashicons-no"></span> Remove Rule</span>'
+					. '<p class="fca_eoi_help"></p>'
+				;
+				echo '<div class="fca_eoi_and">- And -</div>';
+				K::wrap( $condition_HTML_inner
+					, array(
+						'id' => 'fca_lightbox_condition' . $condition_id,
+						'class' => 'fca_lightbox_condition',
+						'style' => '
+							padding: .5%;
+							margin:.5% 0;
+							box-shadow: 0 0 1px rgba(0, 0, 0, .2);
+							width: 97%;
+							background:#F7F7F7;
+						',
+					)
+					, array(
+						'in' => 'fieldset',
+					)
+				);
+			}
+			?>
+		
+			<?php /* Button to add conditions */ ?>		
+			<p><span class="button" id="fca_add_lightbox_condition"><span style="vertical-align:text-bottom" class="dashicons dashicons-plus"></span> Add Rule</span></p>
+		</div>
+
+		<?php if ( 'premium' === $this->settings[ 'distribution' ] ) { ?>
+			<div id="fca_eoi_publish_lightbox_mode_two_step_optin" class="hidden">
+				<?php 
+					K::input( 'fca_eoi[lightbox_cta_text]'
+						, array(
+							'value' => K::get_var( 'lightbox_cta_text', $fca_eoi )
+								? K::get_var( 'lightbox_cta_text', $fca_eoi )
+								: __( 'Free Download' )
+							,
+							'class' => 'regular-text',
+						)
+						, array(
+							'format' => '<p><label>Call to action text :input</label></p>',
+						)
+					);
+					K::input( 'fca_eoi[lightbox_cta_link]'
+						, array(
+							'readonly' => 'readonly',
+							'value' => htmlspecialchars( sprintf( '<a href="#" data-optin-cat="%d">%s</a>'
+								, $post->ID
+								, __( 'Free Download' )
+							) ),
+							'class' => 'regular-text autoselect',
+						)
+						, array(
+							'format' => '<p><label>Call to action link :input</label></p>',
+						)
+					);
+
+					K::wrap( __( 'Post above link into the text editor window of your post/page/widget.' )
+						, array( 'class' => 'description' )
+						, array( 'in' => 'p' )
+					);
+
+				?>
+			</div>
+		<?php } ?>
+
+		<script>
+		jQuery( document ).ready( function( $ ) {
+
+			<?php
+				$lightbox_help = array(
+					'scrolled_percent' => __( 'Only show this popup to visitors who have scrolled down at least X% on the current page. Someone who scrolls down is engaging with your content and therefore more likely to convert. (Keep in mind that the entire page length, including comments, is included in this calculation.)' ),
+					'pageviews' => __( 'Only show this popup to visitors have viewed at least X pages in this visit. Someone who views multiple pages during a visit is very engaged and therefore more likely to convert.' ),
+					'include' => __( 'Makes sure your popup will only be shown on the posts, pages or categories you select. This is great if you want to set up offers for specific categories or blog posts.' ),
+					'exclude' => __( 'Makes sure your popup will never be shown on the posts, pages or categories you select. This is great if you want to avoid showing your popups on landing pages, checkout pages, order confirmation pages, etc.' ),
+					'time_on_page' => __( 'Only show this popup to visitors who have spent at least X seconds on the current page. The longer someone spends on your page, the more engaged he is.' ),
+				);
+			?>
+
+			var lightbox_help = <?php echo json_encode( $lightbox_help ) ?>;
+
+			// Condition template
+			<?php if ( 'free' === $this->settings[ 'distribution' ] ) { ?>
+				var f = ( '<fieldset id="fca_lightbox_condition_x_" class="fca_lightbox_condition" style="padding: .5%; margin:.5% 0; box-shadow: 0 0 1px rgba(0, 0, 0, .2); width: 97%;background:#F7F7F7;"><select name="fca_eoi[publish_lightbox][conditions][_x_][parameter]" style="width:40%"><option value="time_on_page" data-default="30">Time on page is at least (second)</option></select><input class="medium-text" type="text" value="" name="fca_eoi[publish_lightbox][conditions][_x_][value]" style="width:40%"/> <span class="button fca_remove_lightbox_condition"><span style="vertical-align:text-bottom" class="dashicons dashicons-no"></span> Remove Rule</span><p class="fca_eoi_help"></p></fieldset>' );
+			<?php } else if ( 'premium' === $this->settings[ 'distribution' ] ) { ?>
+				var f = ( '<fieldset id="fca_lightbox_condition_x_" class="fca_lightbox_condition" style="padding: .5%; margin:.5% 0; box-shadow: 0 0 1px rgba(0, 0, 0, .2); width: 97%;background:#F7F7F7;"><select name="fca_eoi[publish_lightbox][conditions][_x_][parameter]" style="width:40%"><option value="pageviews" data-default="2">Number of pageviews during this visit at least</option><option value="scrolled_percent" data-default="30">Scrolled down on current page at least (%)</option><option value="time_on_page" data-default="30">Time on page is at least (second)</option><option value="include">Only show popup on the following posts/pages</option><option value="exclude">Never show popup on the following posts/pages</option></select><input class="medium-text" type="text" value="" name="fca_eoi[publish_lightbox][conditions][_x_][value]" style="width:40%"/> <span class="button fca_remove_lightbox_condition"><span style="vertical-align:text-bottom" class="dashicons dashicons-no"></span> Remove Rule</span><p class="fca_eoi_help"></p></fieldset>' );
+			<?php } ?>
+
+			<?php 
+				$s = str_replace( array( "\n", '"' )
+					, array( '', '\"' )
+					, k_selector( 'fca_eoi[publish_lightbox][conditions][_x_][value]', array(), true )
+				);
+			?>
+
+			var s = "<?php echo $s; ?>";
+
+			var t = '<input  class="medium-text" type="text" name="fca_eoi[publish_lightbox][conditions][_x_][value]" style="width:40%"/>';
+			
+			// Disables all but last condition, and use the right input field 
+			$( document )
+				.on( 'change'
+					, "select[name^='fca_eoi[publish_lightbox][conditions]['][name$='][parameter]']"
+					, function() {
+						fix_conditions();
+					}
+				)
+			;
+			$("select[name^='fca_eoi[publish_lightbox][conditions]['][name$='][parameter]']:first").change()
+			;
+			function fix_conditions() {
+				var $button = $( '#fca_add_lightbox_condition' );
+				var $conditions;
+
+				$conditions = $( 'select' )
+					.filter( "[name^='fca_eoi[publish_lightbox][conditions][']" )
+					.filter( "[name$='][parameter]']" )
+				;
+				// Prevent changing other conditions
+				$conditions
+					.not(':last')
+					.prop( 'disabled', true )
+				;
+				// Allow changing last
+				$conditions
+					.last()
+					.prop( 'disabled', false )
+				;
+				// Show hide plus button
+				if ( $conditions.length == $(f).find('select:first option').length ) {
+					$button.hide();
+				} else {
+					$button.show();
+				}
+
+				// Update conditions variable
+				$conditions = $( 'select' )
+					.filter( "[name^='fca_eoi[publish_lightbox][conditions][']" )
+					.filter( "[name$='][parameter]']" )
+				;
+
+				/**
+				 * Show posts selector VS input depending on option.
+				 * Remove previously selected options.
+				 * Update help text
+				 * Use default when applicable (i.e when data-default is here)
+				 * Remove overflow (condition fieldsets without possible options)
+				 */
+				$conditions.each( function( i ) {
+					var $this = $( this );
+					var $fieldset = $this.parent();
+					var $parameter = $( '[name$="[parameter]"]', $fieldset );
+					var $value = $( '[name$="[value]"],[name$="[value][]"]', $fieldset );
+					var name = $value.attr( 'name' ).replace(/\[\]/g, '');
+					var is_textfield = $value.is( 'input' );
+					var use_textfield = ( 'include' !== $parameter.val() && 'exclude' !== $parameter.val() );
+					var cpt, condition, _default;
+
+					// Decide what element to use : input VS select
+					if ( use_textfield && ! is_textfield ) {
+						$( '.select2', $fieldset ).remove();
+						$parameter.after( $( t ).attr( 'name', name ) );
+					} else if ( ! use_textfield && is_textfield ) {
+						$value.replaceWith( $( s ).attr( 'name', name + '[]' ) );
+					}
+
+					// Remove previously selected condition parameters
+					$conditions.not($this).find('option[value='+$this.val()+']').remove();
+
+					// Update help text
+					$( '.fca_eoi_help', $fieldset ).text( lightbox_help[ $parameter.val() ] );
+
+					// Use default
+					if ( _default = $( ':selected', $parameter).data( 'default' ) ) {
+						$value.val( _default );
+						$( 'option', $parameter ).data( 'default', '' );
+					}
+
+					// Remove overflow
+					if ( ! $( 'option', $parameter ).length ) {
+						$( '.fca_remove_lightbox_condition', $fieldset ).click();
+					} 
+				} );
+				$('select.select2').select2();
+			}
+
+			$( document ).on( 'click', '.fca_remove_lightbox_condition', function( i ) {
+
+				var $this = $( this );
+				var $opt = $( 'select:first option:selected', $this.parent() )
+					.clone()
+					.removeAttr( 'selected' )
+				;
+
+				$this.parent().remove(); // remove condition row
+
+				$('.fca_eoi_and').remove(); // removes "AND"
+				$('.fca_lightbox_condition').before( '<div class="fca_eoi_and">- And -</div>' );
+
+				$('select')
+					.filter( "[name^='fca_eoi[publish_lightbox][conditions][']" )
+					.filter( "[name$='][parameter]']" )
+					.append( $opt )
+				;
+
+				fix_conditions();
+			} );
+
+
+			$( document ).on( 'click', '#fca_add_lightbox_condition', function() {
+
+				var $this = $( this );
+				var ts = Date.now();
+				var $condition = $( f.replace( /_x_/g, '_' + ts ) );
+
+				// Remove already used conditions
+				$( 'option', $condition ).each( function() {
+					var $this = $( this );
+					var val = $this.val();
+					var remove = $('select')
+						.filter("[name^='fca_eoi[publish_lightbox][conditions][']")
+						.filter("[name$='][parameter]']")
+						.find('option:selected[value=' + val + ']')
+						.length
+					;
+					
+					if ( remove ) {
+						$( this ).remove();
+					}
+				} );
+				
+				$this.parent().before( '<div class="fca_eoi_and">- And -</div>' );
+				$this.parent().before( $condition );
+				
+				// Bind removing to minus sign
+				$( '.fca_remove_lightbox_condition', '#fca_lightbox_condition_' + ts ).click( function() {
+					$( this ).parent().remove();
+				} );
+
+				// Prevent changing previous conditions
+				fix_conditions();
+			} );
+
+			// Enable disabled conditions fields to allow passing their value to the form action
+			$( document ).on( 'submit', '#post', function() {
+				$( 'select' )
+					.filter( "[name^='fca_eoi[publish_lightbox][conditions][']" )
+					.filter( "[name$='][parameter]']" )
+					.prop( 'disabled', false )
+				;
+			} );
+		} );
+
+		</script>
+		<?php
+
+		echo '</div>'; // #fca_eoi_publish_lightbox
 	}
 
 	public function meta_box_content_build() {
@@ -816,8 +1180,8 @@ class EasyOptInsPostTypes {
 		}
 
 		// Prepare options
+		$pages = array( '~' => __( 'Front page' ) );
 		$pages_objects = get_pages();
-		$pages = array();
 		foreach ( $pages_objects as $page_obj ) {
 			$pages[ $page_obj->ID ] = $page_obj->post_title;
 		}
@@ -833,10 +1197,10 @@ class EasyOptInsPostTypes {
 			)
 			, array( 
 				'format' => '<p><label>:select</label></p>',
-				'options' => array( '' => 'Not set' ) + $pages,
+				'options' => $pages,
 				'selected' => 'add' === $screen->action
 					? $thank_you_page_suggestion
-					: K::get_var( 'thank_you_page', $fca_eoi )
+					: K::get_var( 'thank_you_page', $fca_eoi, '~' )
 				,
 			)
 		);
@@ -912,6 +1276,10 @@ class EasyOptInsPostTypes {
 				$meta[ 'publish_lightbox' ] = array(-1);
 			}
 
+
+			delete_post_meta( $post->ID, 'fca_eoi_layout', $meta[ 'layout' ] );
+			delete_post_meta( $post->ID, 'fca_eoi_provider', $meta[ 'provider' ] );
+
 			add_post_meta( $post->ID, 'fca_eoi', $meta );
 			add_post_meta( $post->ID, 'fca_eoi_layout', $meta[ 'layout' ] );
 			add_post_meta( $post->ID, 'fca_eoi_provider', $meta[ 'provider' ] );
@@ -926,6 +1294,16 @@ class EasyOptInsPostTypes {
 		} else {
 			return $content;
 		}
+	}
+
+	public function enqueue() {
+		wp_enqueue_script( 'featherlight'
+			, $this->settings['plugin_url'] . '/assets/vendor/featherlight/release/featherlight.min.js'
+			, array( 'jquery' )
+		);
+		wp_enqueue_style( 'featherlight'
+			, $this->settings['plugin_url'] . '/assets/vendor/featherlight/release/featherlight.min.css'
+		);
 	}
 
 	public function admin_enqueue() {
@@ -949,6 +1327,10 @@ class EasyOptInsPostTypes {
 			wp_enqueue_style( 'font-awesome', $protocol . '://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.1.0/css/font-awesome.min.css' );
 			wp_enqueue_style( 'select2', $protocol . '://cdnjs.cloudflare.com/ajax/libs/select2/3.5.0/select2.min.css' );
 			wp_enqueue_script('bootstrap-js', $protocol . '://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.2.0/js/bootstrap.min.js');
+			if ( has_action( 'fca_eoi_powerups' ) ) {
+				wp_enqueue_style( 'fca_eoi_powerups', $this->settings['plugin_url'] . '/assets/powerups/fca_eoi_powerups.css' );
+				wp_enqueue_script('fca_eoi_powerups', $this->settings['plugin_url'] . '/assets/powerups/fca_eoi_powerups.js');
+			}
 		}
 		if( 'widgets' === $screen->id ){
 			wp_enqueue_script( 'select2', $protocol . '://cdnjs.cloudflare.com/ajax/libs/select2/3.5.0/select2.js' );
@@ -957,8 +1339,17 @@ class EasyOptInsPostTypes {
 	}
 
 	/**
+	 * Disable autosaving optin forms since it causes data loss
+	 */
+	function disable_autosave() {
+		if ( 'easy-opt-ins' == get_post_type() ) {
+			wp_dequeue_script( 'autosave' );
+		}
+	}	
+
+	/**
 	 * Hides minor publising form items (status, visibility and publication date)
-	 * 
+	 *
 	 * This function shoud be used along with force_published to prevent
 	 * saving posts as drafts
 	 */
@@ -1114,9 +1505,13 @@ class EasyOptInsPostTypes {
 
 		// Subscribe user
 		$status = call_user_func( $this->settings[ 'provider' ] . '_add_user' , $this->settings , $_POST , $list_id );
-
-		// Output ✓ or ✗
+                // Output ✓ or ✗
 		if( $status ) {
+                        $fca_eoi = get_post_meta( K::get_var( 'form_id' , $_POST ), 'fca_eoi', true );
+                        $double_opt_in = K::get_var( 'mailchimp_double_opt_in', $fca_eoi, '' );
+                        if(K::get_var( 'is_send_opt_int_bait' , $fca_eoi ) && $double_opt_in !=='true') {
+                            do_action('fca_eoi_powerups_send_opt_int_bait', K::get_var( 'email' , $_POST ),K::get_var( 'name' , $_POST ) );
+                        }                    
 			echo '✓';
 		} else {
 			echo '✗';
@@ -1172,19 +1567,24 @@ class EasyOptInsPostTypes {
 			$provider = 'campaignmonitor';
 		}
 		// End of Hack
-		if( ! $list_id ) {
-			return;
-		}
 
 		// Subscribe user
-		$status = call_user_func( $provider . '_add_user' , $this->settings , $_POST , $list_id );
+		if( $list_id ) {
+			$status = call_user_func( $provider . '_add_user' , $this->settings , $_POST , $list_id );
+			$double_opt_in = K::get_var( 'mailchimp_double_opt_in', $fca_eoi, '' );
+			if ( K::get_var( 'is_send_opt_int_bait' , $fca_eoi ) && $double_opt_in !=='true' ) {
+				do_action('fca_eoi_powerups_send_opt_int_bait', K::get_var( 'email' , $_POST ), K::get_var( 'name' , $_POST ) );
+			}
+		}
 
 		// Go to thank you page if any
 		$thank_you_page = K::get_var( 'thank_you_page', $fca_eoi );
-		if( $thank_you_page ) {
-			wp_redirect( get_permalink( $thank_you_page ) );
-			exit;
-		}
+		$thank_you_page_url = ( $thank_you_page && '~' !== $thank_you_page )
+	        ? get_permalink( $thank_you_page )
+	        : get_home_url()
+		;
+		wp_redirect( $thank_you_page_url );
+		exit;
 	}
 
 	public function admin_notices() {
@@ -1287,6 +1687,9 @@ class EasyOptInsPostTypes {
 			$post_type,
 			'#' . $post_ID,
 		);
+		if ( is_front_page() ) {
+			$post_cond[] = '~';
+		}
 		$taxonomies = get_taxonomies('','names');
 		$post_taxonomies = wp_get_object_terms( $post->ID,$taxonomies);
 		foreach ( $post_taxonomies as $t ) {
@@ -1323,9 +1726,403 @@ class EasyOptInsPostTypes {
 
 		return $content;
 	}
+
+	public function cookies() {
+	
+		if( ! K::get_var( 'fca_eoi_session', $_COOKIE ) ) {
+			setcookie( 'fca_eoi_session'
+				, mt_rand()
+				, time() + 1800
+				, COOKIEPATH
+				, COOKIE_DOMAIN
+			);
+		}
+
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			return;
+		}
+
+		setcookie( 'fca_eoi_last_visit_ts'
+			, time()
+			, time() + 86400 * 365
+			, COOKIEPATH
+			, COOKIE_DOMAIN
+		);
+
+		setcookie( 'fca_eoi_session_visits'
+			, K::get_var( 'fca_eoi_session_visits', $_COOKIE, 0 ) + 1
+			, time() + 1800
+			, COOKIEPATH
+			, COOKIE_DOMAIN
+		);
+	}
+
+	public function show_lightbox() {
+
+		global $post;
+
+		$url = sprintf( '%s://%s%s'
+			, is_ssl() ? 'https' : 'http'
+			, $_SERVER[ "HTTP_HOST" ]
+			, $_SERVER[ "REQUEST_URI" ]
+		);
+		$post_ID = url_to_postid( $url );
+
+		// Do not show lightbox on mobile excluding tablets
+		$mobile_detect = new Mobile_Detect;
+		if ( $mobile_detect->isMobile() && ! $mobile_detect->isTablet() ) {
+			return;
+		}
+
+		// Post conditions
+		$post_cond = array( '*' );
+		if ( is_front_page() ) {
+			$post_cond[] = '~';
+		}
+		if ( $post_ID ) {
+			$post_type = get_post_type( $post_ID );
+
+			$post_cond[] = $post_type;
+			$post_cond[] = '#' . $post_ID;
+
+			$taxonomies = get_taxonomies('','names');
+			$post_taxonomies = wp_get_object_terms( $post->ID,$taxonomies);
+			foreach ( $post_taxonomies as $t ) {
+				$post_cond[] = $post_type . ':' . $t->term_id;
+			}
+		}
+
+		$has_two_step_optin = false;
+		$fca_eoi_last_visit_ts = K::get_var( 'fca_eoi_last_visit_ts', $_COOKIE, 0 );
+		$fca_eoi_lightbox_shown_ts = K::get_var( 'fca_eoi_lightbox_shown_ts', $_COOKIE, 0 );
+		$fca_eoi_cookie_diff = $fca_eoi_last_visit_ts - $fca_eoi_lightbox_shown_ts;
+		$fca_eoi_cookie_diff_helper = array(
+			'never' => 0,
+			'always' => 0,
+			'session' => 30 * 60,
+			'day' => 86400,
+			'month' => 86400 * 30,
+			'once' => 86400 * 365.25,
+		);
+
+		// Get lightboxes
+		$lightboxes = get_posts( array(
+			'post_type' => 'easy-opt-ins',
+			'posts_per_page' => -1,
+			'orderby' => 'ID',
+			'meta_key' => 'fca_eoi_layout',
+			'meta_value' => 'lightbox_',
+			'meta_compare' => 'like',
+		) );
+
+		// Exit function if no lightbox found
+		if( ! $lightboxes ) {
+			return;
+		}
+
+		switch ( $this->settings['distribution'] ) {
+		case 'free':
+			$conditions_options = array(
+				'time_on_page' => 'Time on page is at least (second)',
+			);
+			break;
+		case 'premium':
+			$conditions_options = array(
+				'pageviews' => 'Number of pageviews during this visit at least',
+				'scrolled_percent' => 'Scrolled down on current page at least (%)',
+				'time_on_page' => 'Time on page is at least (second)',
+				'include' => 'Only show popup on the following posts/pages',
+				'exclude' => 'Never show popup on the following posts/pages',
+			);
+			break;
+		}
+
+		foreach ( $lightboxes as $lightbox ) {
+
+			// Get conditions
+			$lightbox->fca_eoi = get_post_meta( $lightbox->ID , 'fca_eoi', true );
+			$publish_lightbox = K::get_var( 'publish_lightbox', $lightbox->fca_eoi, array() );
+			$publish_lightbox_mode = K::get_var( 'publish_lightbox_mode', $lightbox->fca_eoi, array() );
+			$show_every = K::get_var( 'show_every', $publish_lightbox, 'always' );
+			$conditions = K::get_var( 'conditions', $publish_lightbox, array() );
+			$cookie_ts = sprintf( 'fca_eoi_lightbox_%d_%d_ts'
+				, $lightbox->ID
+				, $_COOKIE[ 'fca_eoi_session' ]
+			);
+
+			// If on a free disctibution, force traditional popup mode
+			if ( 'free' === $this->settings['distribution'] ) {
+				$publish_lightbox_mode = 'traditional_popup';
+			}
+
+			if ( 'two_step_optin' === $publish_lightbox_mode ) {
+				// Add blocking condition
+				$conditions[] = array(
+					'parameter' => 'blocker',
+					'value' => 'dummy',
+				);
+				// Tell that we should show two_step_optin JS
+				$has_two_step_optin = true;
+			} else if ( 'traditional_popup' === $publish_lightbox_mode ) {
+
+				/**
+				 * Check condition: show_every (s)
+				 *
+				 * The lightbox will not be show if the lightbox cookie didn't expire yet
+				 */
+				if( 'never' === $show_every ) {
+					continue;
+				}
+				if( $_COOKIE[ 'fca_eoi_lightbox_' . $lightbox->ID . '_session' ] ) {
+					continue;
+				}
+
+				/**
+				 * Remove every conditions that are not offered in this version
+				 */
+				reset( $conditions );
+				foreach ( $conditions as $condition_id=>$condition ) {
+					if ( ! array_key_exists( $condition[ 'parameter' ], $conditions_options ) ) {
+						unset( $conditions[ $condition_id ] );
+					}
+				}
+
+				/**
+				 * Check condition: slug
+				 */
+				reset( $conditions );
+				foreach ( $conditions as $condition ) {
+
+					// Ignore other conditions
+					if ( 'slug' !== $condition[ 'parameter' ] ) {
+						continue;
+					}
+
+					// get slug
+					global $post;
+					$slug = get_post( $post )->post_name;
+
+					// Test condition 
+					$b = fca_eoi_comp(
+						$slug
+						, $condition[ 'value' ]
+						, $condition[ 'operator' ]
+						, 'exclude' == $condition[ 'action' ]
+					);
+
+					// Ignore this lightbox if condition is not met
+					if( ! $b ) {
+						continue 2;
+					}
+				}
+
+				/**
+				 * Check condition: pageviews
+				 */
+				reset( $conditions );
+				foreach ( $conditions as $condition ) {
+
+					// Ignore other conditions
+					if ( 'pageviews' !== $condition[ 'parameter' ] ) {
+						continue;
+					}
+
+					// Test condition 
+					$b = fca_eoi_comp(
+						$_COOKIE[ 'fca_eoi_session_visits' ] + 1
+						, $condition[ 'value' ]
+						, 'gte'
+					);
+
+					// Ignore this lightbox if condition is not met
+					if( ! $b ) {
+						continue 2;
+					}
+				}
+
+				/**
+				 * Check condition: exlude
+				 */
+				reset( $conditions );
+				foreach ( $conditions as $condition ) {
+
+					// Ignore other conditions
+					if ( 'exclude' !== $condition[ 'parameter' ] ) {
+						continue;
+					}
+
+					// Ignore non-array
+					if ( ! is_array( $condition[ 'value' ] ) ) {
+						continue;
+					}
+
+					$b = ! array_intersect( $condition[ 'value' ], $post_cond );
+
+					// Ignore this lightbox if condition is not met
+					if( ! $b ) {
+						continue 2;
+					}
+				}
+
+				/**
+				 * Check condition: include
+				 */
+				reset( $conditions );
+				foreach ( $conditions as $condition ) {
+
+					// Ignore other conditions
+					if ( 'include' !== $condition[ 'parameter' ] ) {
+						continue;
+					}
+
+					// Ignore non-array
+					if ( ! is_array( $condition[ 'value' ] ) ) {
+						continue;
+					}
+
+					$b = array_intersect( $condition[ 'value' ], $post_cond );
+
+					// Ignore this lightbox if condition is not met
+					if( ! $b ) {
+						continue 2;
+					}
+				}
+			}
+
+			// Prepare $conditions for frontend, remove server side conditions
+			$conditions_js = array();
+			foreach ( $conditions as $k => $v ) {
+				if ( in_array( $v[ 'parameter' ] , array( 'blocker', 'time_on_page', 'scrolled_percent' ) ) ) {
+					$conditions_js[ $k ] = $v;
+				}
+			}
+
+			// Output
+			printf( '
+				<style>.featherlight-content { background: transparent !important; }</style>
+				<div style="display:none"><div id="fca_eoi_lightbox_%s">%s</div></div>'
+				, $lightbox->ID
+				, do_shortcode( "[easy-opt-in id=$lightbox->ID]" )
+			);
+			?>
+				<script>
+					jQuery( document ).ready( function( $ ) {
+
+						var $ = jQuery;
+
+						var fca_eoi_comp = function( a, b, op, negate ) {
+							negate = typeof negate !== 'undefined' ? negate : false;
+							switch ( op ) {
+								case 'eq': return negate ? ( ! ( a == b ) ) : ( a == b );
+								case 'gt': return negate ? ( ! ( a > b ) ) : ( a > b );
+								case 'gte': return negate ? ( ! ( a >= b ) ) : ( a >= b );
+								case 'lt': return negate ? ( ! ( a < b ) ) : ( a < b );
+								case 'lte': return negate ? ( ! ( a <= b ) ) : ( a <= b );
+							}
+						}
+
+						var ts = <?php echo time(); ?>;
+						var ts_0 = Math.floor( Date.now() / 1000 );
+						var conditions = <?php echo json_encode( $conditions_js ) ?>;
+
+						var lightbox_interval = setInterval( function () {
+
+							var a, b, op, negate;
+							var parameters = []
+							parameters[ 'scrolled_percent' ] = ($(window).scrollTop()/($(document).height()-$(window).height()))*100;
+							parameters[ 'time_on_page' ] = Math.floor( Date.now() / 1000 ) - ts_0;
+
+
+							// Check conditions
+							for( i in conditions ) {
+
+								condition = conditions[ i ];
+
+								a = parameters[ condition.parameter ];
+								b = condition.value;
+								op = 'gte';
+
+								if ( ! fca_eoi_comp( a, b, op ) ) {
+									return;
+								}
+							}
+
+							// The non-obvious +/-N makes sure the lightbox is shown on each page when applicable
+							var ts_1 = Math.floor( Date.now() / 1000 );
+							var data = {
+								action: 'fca_eoi_lightbox_set_cookie',
+								id: <?php echo $lightbox->ID; ?>,
+								show_every: <?php echo $fca_eoi_cookie_diff_helper[ $show_every ]; ?> - 10,
+								ts: ts + ts_1 - ts_0
+							};
+
+							$.featherlight( $( '#fca_eoi_lightbox_<?php echo $lightbox->ID; ?>' ) );
+							$.post( fca_eoi.ajax_url, data );
+
+							// Prevent showing the lightbox more than once
+							clearInterval( lightbox_interval );
+						}, 1000 );
+					} );
+				</script>
+			<?php
+		}
+
+		if ( $has_two_step_optin ) {
+			?>
+			<script>
+				jQuery( document ).ready( function( $ ) {
+
+					var $ = jQuery;
+					$( '[data-optin-cat]' ).click( function( e ) {
+
+						var $this = $( this );
+						var lightbox_ID = $this.data( 'optin-cat' );
+						$.featherlight( $( '#fca_eoi_lightbox_' + lightbox_ID ) );
+						e.preventDefault();
+					} );
+				} );
+			</script>
+			<?php
+		}
+	}
+
+	public function fca_eoi_lightbox_set_cookie() {
+
+		// Time of last lightbox
+		setcookie( 'fca_eoi_lightbox_shown_ts'
+			, K::get_var( 'ts', $_POST, time() )
+			, time() + 86400 * 365
+			, COOKIEPATH
+			, COOKIE_DOMAIN
+		);
+
+		// This lightbox session
+		setcookie( sprintf( 'fca_eoi_lightbox_%d_session', $_POST[ 'id' ] )
+			, 1
+			, time() + $_POST[ 'show_every' ]
+			, COOKIEPATH
+			, COOKIE_DOMAIN
+		);
+
+		// Time of last lightbox with id in session
+		setcookie( sprintf( 'fca_eoi_lightbox_%d_%d_ts', $_POST[ 'id' ], K::get_var( 'fca_eoi_session', $_COOKIE ) )
+			, K::get_var( 'ts', $_POST, time() )
+			, time() + 1800
+			, COOKIEPATH
+			, COOKIE_DOMAIN
+		);
+
+		// Number of lightboxes with id in session
+		setcookie( sprintf( 'fca_eoi_lightbox_%d_%s_n', $_POST[ 'id' ], K::get_var( 'fca_eoi_session', $_COOKIE ) )
+			, K::get_var( sprintf( 'fca_eoi_lightbox_%d_%s_n', $_POST[ 'id' ], K::get_var( 'fca_eoi_session', $_COOKIE ) ), $_COOKIE, 0 ) + 1
+			, time() + 1800
+			, COOKIEPATH
+			, COOKIE_DOMAIN
+		);
+	}
 }
 
-function k_selector( $name, $selected_options = array() ) {
+function k_selector( $name, $selected_options = array(), $return = false ) {
 
 	global $post;
 	// Dirty fix to restore the global $post
@@ -1335,14 +2132,19 @@ function k_selector( $name, $selected_options = array() ) {
 	$post_types = get_post_types( array( 'public' => true ) );
 	unset( $post_types[ 'attachment' ] );
 
+	$ret = ob_start();
+
 	// Start ouput
-	echo '<select 
-		data-placeholder="' . __( 'Type to search for posts, categories or pages.' ) . '"
-		name = "' . $name . '[]"
-		class="select2"
-		multiple="multiple"
-		style="width: 27em;"
-	>';
+	echo '<select data-placeholder="' . __( 'Type to search for posts, categories or pages.' ) . '" name = "' . $name . '[]" class="select2" multiple="multiple" style="width: 40%;">';
+
+	// Front page
+	K::wrap( __( 'Front page' )
+		, array(
+			'value' => '~',
+			'selected' => in_array( '~', $selected_options ),
+		)
+		, array( 'in' => 'option' )
+	);
 
 	// All posts
 	// K::wrap( __( 'All' )
@@ -1432,4 +2234,22 @@ function k_selector( $name, $selected_options = array() ) {
 		}
 	}
 	echo '</select>';
+
+	$ret = ob_get_clean();
+
+	if ( $return ) {
+		return $ret;
+	} else {
+		echo $ret;
+	}
+}
+
+function fca_eoi_comp( $a, $b, $op, $negate = false ) {
+	switch ( $op ) {
+		case 'eq': return $negate ? ( ! ( $a == $b ) ) : ( $a == $b );
+		case 'gt': return $negate ? ( ! ( $a > $b ) ) : ( $a > $b );
+		case 'gte': return $negate ? ( ! ( $a >= $b ) ) : ( $a >= $b );
+		case 'lt': return $negate ? ( ! ( $a < $b ) ) : ( $a < $b );
+		case 'lte': return $negate ? ( ! ( $a <= $b ) ) : ( $a <= $b );
+	}
 }

@@ -9,6 +9,9 @@ jQuery( document ).ready( function( $ ) {
 	// Is this a new opt-in form
 	var fca_eoi_new_post = Boolean( $( 'body.post-new-php').length );
 
+	// Used to track if the layout switcher was clicked on new optin forms
+	var layout_button_clicked = false;
+
 	// Use Layout 2 by default
 	$( '#fca_eoi_layout_select' )
 		.filter( function() { return fca_eoi_new_post; } )
@@ -30,13 +33,17 @@ jQuery( document ).ready( function( $ ) {
 		var message = 'The form has not been saved.';
 		var ts_diff = time() - ts;
 
-		if ( 3 < ts_diff ) {
+		if ( 20 < ts_diff ) {
 			return message;
 		}
-	});
+	} );
 
 	// Unbind beforeunload event handler
 	$( document ).on( 'click', '#publish', function () {
+
+		$( window ).unbind( 'beforeunload' );
+	} );
+	$( document ).on( 'submit', '#post', function () {
 
 		$( window ).unbind( 'beforeunload' );
 	} );
@@ -110,7 +117,6 @@ jQuery( document ).ready( function( $ ) {
 
 	// Hide Tabs
 	$( '#fca_eoi_meta_box_nav' ).hide();
-	$( '[href="#fca_eoi_meta_box_build"]' ).click();
 
 	// Apply select2
 	$( '.select2' ).select2();
@@ -129,9 +135,16 @@ jQuery( document ).ready( function( $ ) {
 		$( '#fca_eoi_layout_select' ).val( layout_id ).change();
 
 		// Show corresponding publication fields
-		$( '[id^=fca_eoi_publish_]').hide();
+		$( '#fca_eoi_publish_widget,#fca_eoi_publish_postbox,#fca_eoi_publish_lightbox').hide();
 		$( '#fca_eoi_publish_' + fca_eoi_layout_type( fca_eoi_current_layout_id() ) ).show();
-		$( '[href="#fca_eoi_meta_box_build"]' ).click();
+		
+		// Go back to the build tab, unless we are in a new form and the switcher was not clicked
+		if( fca_eoi_new_post && ! layout_button_clicked ) {
+			layout_button_clicked = true;
+			$( 'a[href="#fca_eoi_meta_box_setup"]' ).click();
+		} else {
+			$( 'a[href="#fca_eoi_meta_box_build"]' ).click();
+		}
 	} );
 
 	// Handle "Switch layout button"
@@ -327,7 +340,7 @@ jQuery( document ).ready( function( $ ) {
 
 			// Update select boxes
 			$( 'select[data-selected]' ).each( function() {
-				
+
 				var $this = $( this );
 				var selected = $( this ).data( 'selected' );
 
@@ -490,13 +503,10 @@ jQuery( document ).ready( function( $ ) {
 		.filter( function() { return fca_eoi_new_post; } )
 		.attr( 'checked', 'checked' )
 	;
-	// $( '[name="fca_eoi[show_fatcatapps_link]"]' )
-	// 	.filter( function() { return fca_eoi_new_post; } )
-	// 	.attr( 'checked', 'checked' )
-	// ;
-
-	// If editing an existing post, focus on the "Build" tab
-	$( 'a[href="#fca_eoi_meta_box_build"]', 'body.post-php' ).click();
+	$( '[name="fca_eoi[show_fatcatapps_link]"]' )
+		.filter( function() { return fca_eoi_new_post; } )
+		.attr( 'checked', 'checked' )
+	;
 
 	// If adding a new opt-in form, focus on the title
 	setTimeout( 
@@ -509,7 +519,7 @@ jQuery( document ).ready( function( $ ) {
 		} , 500
 	);
 
-	// Make sure the form is updates once (headline size would't update if we don't)
+	// Make sure the form is updated once (headline size would't update if we don't)
 	setTimeout( function() { jQuery( '[name="fca_eoi[name_placeholder]"]' ).change(); } , 500 );
 	setTimeout( function() { jQuery( '[name="fca_eoi[name_placeholder]"]' ).change(); } , 1500 );
 	setTimeout( function() { jQuery( '[name="fca_eoi[name_placeholder]"]' ).change(); } , 2500 );
@@ -580,6 +590,46 @@ jQuery( document ).ready( function( $ ) {
 	$(".autoselect")
 		.bind( 'click focus mouseenter', function() { $( this ).select() } )
 		.mouseup( function( e ) { e.preventDefault } )
+	;
+
+	// Show/hide popup publication modes
+	$( 'input[name="fca_eoi[publish_lightbox_mode]"]' )
+		.on( 'click change', function() {
+			var $this = $( this );
+			var mode = $this.val();
+			var $mode = $( '#fca_eoi_publish_lightbox_mode_' + mode );
+			$mode.removeClass( 'hidden' );
+			$( '[id^=fca_eoi_publish_lightbox_mode_]' ).not().hide( 'fast' );
+			if ( $this.prop( 'checked' ) ) {
+				$mode.show( 'fast' );
+			}
+		} )
+	;
+	// If we have only one publication mode, choose it
+	if ( $( 'input[name="fca_eoi[publish_lightbox_mode]"]' ).length == 1 ) {
+		$( 'input[name="fca_eoi[publish_lightbox_mode]"]' ).attr( 'checked', 'checked' );
+	}
+
+	$( 'input[name="fca_eoi[publish_lightbox_mode]"]' ).filter(':checked').click();
+	$( 'input[name="fca_eoi[publish_lightbox_mode]"]' ).unbind('click');
+
+	// Update popup link HTML code
+	$( 'input[name="fca_eoi[lightbox_cta_text]"]' )
+		.change( function() {
+
+			var $this = $( this );
+			var text = $this.val();
+			var post_ID = $( '#post_ID' ).val();
+			var link = '<a href="#" data-optin-cat="{{post_ID}}">{{text}}</a>';
+			var $link = $( 'input[name="fca_eoi[lightbox_cta_link]"]' );
+
+			link = link
+				.replace( '{{post_ID}}', post_ID )
+				.replace( '{{text}}', text )
+			;
+			$link.val( link);
+		} )
+		.change()
 	;
 
 	// Debounce
