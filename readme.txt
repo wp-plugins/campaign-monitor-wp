@@ -6,8 +6,8 @@ Tags: campaign monitor, campaign monitor opt-in, campaign monitor wordpress plug
 Author URI: https://fatcatapps.com/
 Plugin URI: https://fatcatapps.com/optincat?utm_campaign=description%2Bcta&utm_source=https%3A%2F%2Fwordpress.org%2Fplugins%2Fcampaign-monitor-wp%2F&utm_medium=referral
 Requires at least: 3.9.1
-Tested up to: 4.1
-Stable tag: 1.2.0.2
+Tested up to: 4.1.1
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,35 +81,40 @@ In order to use this plugin you'll need a Campaign Monitor account + Campaign Mo
 
 == Changelog ==
 
-= 1.2.0.2 = 
+= Campaign Monitor Forms by Optin Cat 1.2.1 = 
+* Bugfix: "Quick edit" disappears on pages
+* Improved performance / loadspeed of popup feature
+* Improved performance of WP backend
+
+= Campaign Monitor Forms by Optin Cat 1.2.0.2 = 
 * Bugfix
 
-= 1.2 =
+= Campaign Monitor Forms by Optin Cat 1.2 =
 * Renamed plugin to Optin Cat
 * Added a new layout
 * Added Popup Feature
 * Numerous Bugfixes
 * Numerous User Interface Improvements
 
-= 1.1.4 =
+= Campaign Monitor Forms by Optin Cat 1.1.4 =
 * Fixed bugs introduced with 1.1.3
 
-= 1.1.3 =
+= Campaign Monitor Forms by Optin Cat 1.1.3 =
 * CSS improvements
 * UI improvements
 * Fixed API conflicts
 * Fixed conflict with cherry plugin 
 
-= 1.1.2 =
+= Campaign Monitor Forms by Optin Cat 1.1.2 =
 * Numerous CSS Fixes
 * Fixed issues with PHP5.2
 * Confirmed compatibility with WordPress 4.0.1
 * Added Easy Opt-ins Premium banner
 
-= 1.1.1 =
+= Campaign Monitor Forms by Optin Cat 1.1.1 =
 * Fixed an issue that was introduced with v1.1
 
-= 1.1 =
+= Campaign Monitor Forms by Optin Cat 1.1 =
 * Added new opt-in type: Post Boxes which can be published using shortcodes.
 * Added 2 new widget layouts.
 * Added 2 new post box layouts.
@@ -117,13 +122,13 @@ In order to use this plugin you'll need a Campaign Monitor account + Campaign Mo
 * Added "No CSS" layouts.
 * Lots of UI improvements.
 
-= 1.0.4 =
+= Campaign Monitor Forms by Optin Cat 1.0.4 =
 * Various changes to API integration
 
-= 1.0 =
+= Campaign Monitor Forms by Optin Cat 1.0 =
 * Initial Release
 
-= 0.9 =
+= Campaign Monitor Forms by Optin Cat 0.9 =
 * Beta release
 
 

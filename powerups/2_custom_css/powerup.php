@@ -68,6 +68,12 @@ class EoiCustomCssBox {
 	public function enqueue_admin_js() {
 
 		$protocol = is_ssl() ? 'https' : 'http';
+		$screen = get_current_screen();
+
+		// Exit function if not in one of our plugin pages
+		if( 'easy-opt-ins' !== $screen->id ){
+			return;
+		}
 
 		// Enqueue CodeMirror JS and CSS
 		$codemirror_prefix = "$protocol://cdnjs.cloudflare.com/ajax/libs/codemirror/4.7.0/";

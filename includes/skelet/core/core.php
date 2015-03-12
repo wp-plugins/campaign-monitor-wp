@@ -51,7 +51,7 @@ function paf_enqueue() {
 	$protocol = 'http' . ( is_ssl() ? 's' : '' );
 
 	$js = array(
-		'highlight' => "$protocol://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.3/highlight.min.js",
+		// 'highlight' => "$protocol://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.3/highlight.min.js",
 	);
 
 	$css = array(
@@ -278,7 +278,7 @@ function paf_header() {
 		</script>
 	<?php
 }
-add_action( 'admin_head', 'paf_header' );
+// add_action( 'admin_head', 'paf_header' );
 
 /**
  * Add JS file

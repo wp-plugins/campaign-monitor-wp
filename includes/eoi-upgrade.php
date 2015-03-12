@@ -51,10 +51,10 @@ class EasyOptInsUpgrade {
         </script>
         <style>
             a[href="edit.php?post_type=easy-opt-ins&page=eoi_premium_upgrade"] {
-                color: #6bbc5b !important;
+                color: #ee6800 !important;
             }
             a[href="edit.php?post_type=easy-opt-ins&page=eoi_premium_upgrade"]:hover {
-                color: #7ad368 !important;
+                color: #C65700 !important;
             }
             .eoi-changelogs {
                 background: #f1f1f1;
@@ -69,6 +69,6 @@ class EasyOptInsUpgrade {
     }
     
     function fca_eoi_information_notice () {
-        echo '<div class="updated" style="padding-top:5px;padding-bottom:5px;line-height:22px;text-align:center;border-color:#FDFDFD;background-color:#FDFDFD;">' . sprintf( __( '<p><strong style="font-size:18px;">Wanna Get More Optins?</strong></p><p>Optin Cat Premium Increases Conversions With More Layouts, Advanced Popup Targeting, 2-Step-Optins, Email Support And More.</p><p><a class="button button-primary button-large" style="padding-left:30px;padding-right:30px;font-weight:bold;" href="%s" target="_blank">LEARN MORE</a></p>' ), $this->fca_maketing_page_top_ad ) . '</div>';
+        echo '<div class="updated" style="padding-top:5px;padding-bottom:5px;line-height:22px;text-align:center;border-color:#FDFDFD;background-color:#FDFDFD;">' . sprintf( __( '<p><strong style="font-size:18px;">Wanna Get More Email Subscribers?</strong></p><p>Your List Is One Of The Most Valuable Assets You Have. Optin Cat Premium Comes With A Ton Of Advanced Features That Help You Get More Email Subscribers.</p><p><a class="button optin-cat-cta button-large" style="padding-left:30px;padding-right:30px;font-weight:bold;" href="%s" target="_blank">LEARN MORE</a></p>' ), $this->fca_maketing_page_top_ad ) . '</div>';
     }    
 }

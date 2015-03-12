@@ -1297,13 +1297,7 @@ class EasyOptInsPostTypes {
 	}
 
 	public function enqueue() {
-		wp_enqueue_script( 'featherlight'
-			, $this->settings['plugin_url'] . '/assets/vendor/featherlight/release/featherlight.min.js'
-			, array( 'jquery' )
-		);
-		wp_enqueue_style( 'featherlight'
-			, $this->settings['plugin_url'] . '/assets/vendor/featherlight/release/featherlight.min.css'
-		);
+		/* Silence is golden */
 	}
 
 	public function admin_enqueue() {
@@ -1479,7 +1473,10 @@ class EasyOptInsPostTypes {
 	 * Removes quick edit
 	 */
 	public function remove_quick_edit( $actions ) {
-		unset($actions['inline hide-if-no-js']);
+		global $post;
+		if( 'easy-opt-ins' === $post->post_type ) {
+			unset($actions['inline hide-if-no-js']);
+		}
 		return $actions;
 	}
 

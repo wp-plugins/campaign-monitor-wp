@@ -64,8 +64,8 @@ class EasyOptInsPointer {
         $button_2_fn = sprintf($ajax, 'yes');
 
         // Content
-        $content = '<h3>' . __('Free Report') . '</h3>';
-        $content .= '<p>' . __("Get a free 1-page PDF on \"How To Double Your Opt-in Conversion Rate\".") . '</p>';
+        $content = '<h3>' . __('Easily Grow Your List') . '</h3>';
+        $content .= '<p>' . __("Imagine you could get more email optins and make more money. Find out how in our totally free & ridicolously actionable 5-day course on \"How To Triple Your Email List\". No spam.") . '</p>';
         $content .= '<p>' . '<input type="text" name="eoi_email" id="eoi_email" value="' . $current_user->user_email . '" style="width: 100%"/>' . '</p>';
 
         // Options

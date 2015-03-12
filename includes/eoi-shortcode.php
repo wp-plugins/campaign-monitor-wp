@@ -22,8 +22,56 @@ class EasyOptInsShortcodes {
 
 		$protocol = is_ssl() ? 'https' : 'http';
 
+		// Get lightboxes
+		$lightboxes = get_posts( array(
+			'post_type' => 'easy-opt-ins',
+			'posts_per_page' => -1,
+			'orderby' => 'ID',
+			'meta_key' => 'fca_eoi_layout',
+			'meta_value' => 'lightbox_',
+			'meta_compare' => 'like',
+		) );
+
+		// Get postboxes
+		$postboxes = get_posts( array(
+			'post_type' => 'easy-opt-ins',
+			'posts_per_page' => -1,
+			'orderby' => 'ID',
+			'meta_key' => 'fca_eoi_layout',
+			'meta_value' => 'postbox_',
+			'meta_compare' => 'like',
+		) );
+
+		// Get postboxes
+		$widgets = get_posts( array(
+			'post_type' => 'easy-opt-ins',
+			'posts_per_page' => -1,
+			'orderby' => 'ID',
+			'meta_key' => 'fca_eoi_layout',
+			'meta_value' => 'layout_',
+			'meta_compare' => 'like',
+		) );
+
+		// Exit function if not optin form exist
+		if ( ! $lightboxes && ! $postboxes && ! $widgets ) {
+			return;
+		}
+
+		wp_enqueue_script( 'jquery' );
+
 		wp_enqueue_style( 'fca_eoi', $this->settings[ 'plugin_url' ].'/assets/style.css' );
-		wp_enqueue_script( 'fca_eoi', $this->settings[ 'plugin_url' ].'/assets/script.js', array( 'jquery' ) );
+		wp_enqueue_script( 'fca_eoi', $this->settings[ 'plugin_url' ].'/assets/script.js' );
+
+		wp_enqueue_style( 'fontawesome', $protocol . '://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.1.0/css/font-awesome.min.css' );
+
+		// For lightboxes only
+		if ( $lightboxes ) {
+			wp_enqueue_script( 'featherlight', $this->settings['plugin_url'] . '/assets/vendor/featherlight/release/featherlight.min.js' );
+			wp_enqueue_style( 'featherlight', $this->settings['plugin_url'] . '/assets/vendor/featherlight/release/featherlight.min.css' );
+		}
+
+		wp_enqueue_script( 'tooltipster', $this->settings[ 'plugin_url' ] . '/assets/vendor/tooltipster/jquery.tooltipster.min.js' );
+		wp_enqueue_style( 'tooltipster', $this->settings[ 'plugin_url' ] . '/assets/vendor/tooltipster/tooltipster.css' );
 		wp_localize_script(
 			'fca_eoi'
 			, 'fca_eoi'
@@ -33,9 +81,6 @@ class EasyOptInsShortcodes {
 				'invalid_email' => "Error: Please enter a valid email address. For example \"max@domain.com\".",
 			)
 		);
-		wp_enqueue_style( 'fontawesome', $protocol . '://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.1.0/css/font-awesome.min.css' );
-		wp_enqueue_script( 'tooltipster', $protocol . '://cdnjs.cloudflare.com/ajax/libs/tooltipster/3.0.5/js/jquery.tooltipster.min.js' );
-		wp_enqueue_style( 'tooltipster', $protocol . '://cdnjs.cloudflare.com/ajax/libs/tooltipster/3.0.5/css/tooltipster.min.css' );
 	}
 
 	public function shortcode_content( $atts ) {
