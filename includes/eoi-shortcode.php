@@ -5,6 +5,7 @@ class EasyOptInsShortcodes {
 	var $settings;
 
 	public function __construct( $settings = array() ) {
+		global $pagenow, $typenow;
 
 		$this->settings = $settings;
 
@@ -16,6 +17,86 @@ class EasyOptInsShortcodes {
 		foreach ( $settings[ 'shortcode_aliases' ] as $shortcode) {
 			add_shortcode( $shortcode, array( $this, 'shortcode_content' ) );
 		}
+
+		// Add shortcode generator button
+		if ( in_array( $pagenow, array( 'post.php', 'page.php', 'post-new.php', 'post-edit.php' ) ) && $typenow != 'download' ) {
+			add_action( 'admin_head', array( $this, 'button_head' ) );
+			add_action( 'media_buttons', array( $this, 'button' ), 1000 );
+			add_action( 'admin_footer', array( $this, 'button_footer' ) );
+		}
+	}
+
+	public function button_head() {
+		?>
+
+		<style>
+			#fca-eoi-media-button {
+				background: url(<?php echo $this->settings['plugin_url'] . '/icon.png' ?>) 0 -1px no-repeat;
+				background-size: 16px 16px;
+			}
+		</style>
+
+		<?php
+	}
+
+	public function button() {
+		$button_title = __( 'Optin Cat' );
+
+		if ( version_compare( $GLOBALS['wp_version'], '3.5', '<' ) ) {
+			echo '<a href="#TB_inline?width=640&inlineId=fca-eoi-shortcode-thickbox" class="thickbox" title="' . $button_title . '">' . $button_title . '</a>';
+		} else {
+			$img = '<span class="wp-media-buttons-icon" id="fca-eoi-media-button"></span>';
+			echo '<a href="#TB_inline?width=640&inlineId=fca-eoi-shortcode-thickbox" class="thickbox button" title="' . $button_title . '" style="padding-left: .4em;">' . $img . $button_title . '</a>';
+		}
+	}
+
+	public function button_footer() {
+		$options = array();
+
+		foreach ( get_posts( array( 'post_type' => 'easy-opt-ins', 'post_status' => 'publish', 'posts_per_page' => -1 ) ) as $post ) {
+			$form_id = $post->ID;
+			$layout = get_post_meta( $form_id, 'fca_eoi_layout', true );
+
+			if ( ! empty( $layout ) && strpos( $layout, 'postbox_' ) === 0 ) {
+				$options[ $form_id ] = empty( $post->post_title ) ? '(no title)' : $post->post_title;
+			}
+		}
+
+		?>
+
+		<script type="text/javascript">
+			jQuery( function( $ ) {
+				$( '#fca-eoi-shortcode-insert' ).on( 'click', function() {
+					var id = $( '#fca-eoi-shortcode' ).val();
+
+					if ( '' === id ) {
+						alert( <?php echo json_encode( __( 'You must choose a form' ) ) ?> );
+						return;
+					}
+
+					window.send_to_editor( '[<?php echo $this->settings[ 'shortcode' ] ?> id="' + id + '"]' );
+				} );
+			} );
+		</script>
+		<div id="fca-eoi-shortcode-thickbox" style="display: none;">
+			<div class="wrap" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+				<p><?php _e('Use the form below to insert an Optin Cat shortcode .' ) ?></p>
+				<div>
+					<select id="fca-eoi-shortcode">
+						<option value=""><?php _e( 'Please select...' ) ?></option>
+						<?php foreach ( $options as $form_id => $title ) { ?>
+							<option value="<?php echo (int) $form_id ?>"><?php echo esc_html( $title ) ?></option>
+						<?php } ?>
+					</select>
+				</div>
+				<p class="submit">
+					<input type="button" id="fca-eoi-shortcode-insert" class="button-primary" value="<?php _e( 'Insert' ) ?>">
+					<a id="fca-eoi-shortcode-cancel" class="button-secondary" onclick="tb_remove();" title="<?php _e( 'Cancel' ) ?>"><?php _e( 'Cancel' ) ?></a>
+				</p>
+			</div>
+		</div>
+
+		<?php
 	}
 
 	public function enqueue_assets() {
@@ -59,13 +140,13 @@ class EasyOptInsShortcodes {
 
 		wp_enqueue_script( 'jquery' );
 
-		wp_enqueue_style( 'fca_eoi', $this->settings[ 'plugin_url' ].'/assets/style.css' );
+		wp_enqueue_style( 'fca_eoi', $this->settings[ 'plugin_url' ].'/assets/style' . ( EasyOptInsLayout::uses_new_css() ? '-new' : '' ) . '.css' );
 		wp_enqueue_script( 'fca_eoi', $this->settings[ 'plugin_url' ].'/assets/script.js' );
 
 		wp_enqueue_style( 'fontawesome', $protocol . '://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.1.0/css/font-awesome.min.css' );
 
 		// For lightboxes only
-		if ( $lightboxes ) {
+		if ( isset( $lightboxes ) ) {
 			wp_enqueue_script( 'featherlight', $this->settings['plugin_url'] . '/assets/vendor/featherlight/release/featherlight.min.js' );
 			wp_enqueue_style( 'featherlight', $this->settings['plugin_url'] . '/assets/vendor/featherlight/release/featherlight.min.css' );
 		}
@@ -75,11 +156,9 @@ class EasyOptInsShortcodes {
 		wp_localize_script(
 			'fca_eoi'
 			, 'fca_eoi'
-			, array(
-				'ajax_url' => admin_url( 'admin-ajax.php' ),
-				'field_required' => 'Error: This field is required.',
-				'invalid_email' => "Error: Please enter a valid email address. For example \"max@domain.com\".",
-			)
+			, array_merge( $this->settings['error_text'], array(
+				'ajax_url' => admin_url( 'admin-ajax.php' )
+			) )
 		);
 	}
 
@@ -100,28 +179,72 @@ class EasyOptInsShortcodes {
 			return 'Form doesn\'t exist';
 		}
 
+		$error_text = array();
+		foreach ( $fca_eoi_meta as $key => $value ) {
+			if ( strpos( $key, 'error_text_' ) === 0 ) {
+				$error_text[ substr( $key, 11 ) ] = $value;
+			}
+		}
+		if ( count( $error_text ) > 0 ) {
+			?>
+			<script type="text/javascript">
+				<?php foreach ( $error_text as $key => $value ) { ?>
+					fca_eoi[<?php echo json_encode( $key ) ?>] = <?php echo json_encode( $value ) ?>;
+				<?php } ?>
+			</script>
+			<?php
+		}
+
 		// Get template
 		$layout_id = $fca_eoi_meta[ 'layout' ];
-		$layout_type = preg_replace( '/_\d+$/', '', $layout_id);
-		$layout_path_arr = glob( $this->settings[ 'plugin_dir' ] . "layouts/*/$layout_id", GLOB_ONLYDIR );
-		$layout_path = array_pop( $layout_path_arr );
-		if( ! file_exists( $layout_path . '/layout.html' )) return;
-		$template = file_get_contents( $layout_path . '/layout.html' );
-		if( file_exists( $layout_path . '/layout.css' ) ) {
-			$scss = new scssc();
-			$scss->setFormatter("scss_formatter_compressed");
+
+		$layout         = new EasyOptInsLayout( $layout_id );
+		$layout_type    = $layout->layout_type;
+		$html_path      = $layout->path_to_resource( 'layout', 'html' );
+		$html_wrap_path = $layout->path_to_html_wrapper();
+		$scss_path      = $layout->path_to_resource( 'layout', 'scss' );
+
+		if ( ! file_exists( $html_path ) ) {
+			return '';
+		}
+
+		if ( EasyOptInsLayout::uses_new_css() ) {
+			$template = str_replace(
+				'{{{layout}}}',
+				file_get_contents( $html_path ),
+				file_get_contents( $html_wrap_path )
+			);
+		} else {
+			$template = file_get_contents( $html_path );
+		}
+
+		if ( file_exists( $scss_path ) ) {
+			$scss = $layout->new_scss_compiler();
 			$template = '<style>'
 				. '.fca_eoi_form p { width: auto; }'
 				. $scss->compile(
 					sprintf( '$ltr: %s;', is_rtl() ? 'false' : 'true' )
 					. '#fca_eoi_form_' . $atts[ 'id' ] . '{'
 					. 'input{ max-width: 9999px; }'
-					. file_get_contents( $layout_path . '/layout.css' )
+					. file_get_contents( $scss_path )
 					. '}'
 				)
 				. '</style>'
 				. $template
 			;
+		}
+
+		$form_wrapper = '';
+		$form_wrapper_end = '';
+
+		if ( EasyOptInsLayout::uses_new_css() && $layout->layout_type != 'lightbox' ) {
+			$form_wrapper =
+				'<div class="' .
+					'fca_eoi_form_wrapper ' .
+					$layout->layout_class . '_wrapper ' .
+					'fca_eoi_layout_' . $layout->layout_number . '_wrapper' .
+				'">';
+			$form_wrapper_end = '</div>';
 		}
 
 		// Fill template with our formatting stuff
@@ -138,10 +261,20 @@ class EasyOptInsShortcodes {
 				'</form>',
 			),
 			array(
-				sprintf( '<div id="fca_eoi_form_%s" style="margin:0 !important; padding: 0 !important;"><form method="post" action="" class="fca_eoi_form fca_eoi_%s fca_eoi_%s" data-fca_eoi_list_id="%s" data-fca_eoi_thank_you_page="%s" novalidate><input type="hidden" name="fca_eoi_form_id" value="%s" />'
+				sprintf(
+					$form_wrapper .
+					'<div id="fca_eoi_form_%s" class="fca_eoi_form_content">' .
+						'<form method="post" action="" class="fca_eoi_form %s %s" ' .
+							'data-fca_eoi_list_id="%s" data-fca_eoi_thank_you_page="%s" novalidate' .
+						'>' .
+							'<input type="hidden" name="fca_eoi_form_id" value="%s" />'
 					, $atts[ 'id' ]
-					, $layout_type
-					, $layout_id
+					, EasyOptInsLayout::uses_new_css()
+						? 'fca_eoi_layout_' . $layout->layout_number
+						: 'fca_eoi_' . $layout_type
+					, EasyOptInsLayout::uses_new_css()
+						? $layout->layout_class
+						: 'fca_eoi_' . $layout_id
 					, K::get_var( 'list_id', $fca_eoi_meta )
 					, get_permalink( K::get_var( 'thank_you_page', $fca_eoi_meta ) ) 
 						? get_permalink( K::get_var( 'thank_you_page', $fca_eoi_meta ) ) 
@@ -149,19 +282,35 @@ class EasyOptInsShortcodes {
 					, $post->ID
 				),
 				'<div>{{{description_copy}}}</div>',
-				'<span>{{{headline_copy}}}</span>',
-				'<input type="text" name="name" placeholder="{{{name_placeholder}}}" />',
-				'<input type="email" name="email" placeholder="{{{email_placeholder}}}" 	/>',
-				'<input type="submit" value="{{{button_copy}}}" />',
-				'<span >{{{privacy_copy}}}</span>',
-				'{{#show_fatcatapps_link}}<p class="fca_eoi_' . $layout_id . '_fatcatapps_link_wrapper"><a href="http://fatcatapps.com/eoi" target="_blank">Powered by Optin Cat</a></p>{{/show_fatcatapps_link}}',
-				'<input type="hidden" name="id" value="' . $atts[ 'id' ] . '"><input type="hidden" name="fca_eoi" value="1"></form></div>',
+				EasyOptInsLayout::uses_new_css()
+					? '<div>{{{headline_copy}}}</div>'
+					: '<span>{{{headline_copy}}}</span>',
+				EasyOptInsLayout::uses_new_css()
+					? '<input class="fca_eoi_form_input_element" type="text" name="name" placeholder="{{{name_placeholder}}}">'
+					: '<input type="text" name="name" placeholder="{{{name_placeholder}}}" />',
+				EasyOptInsLayout::uses_new_css()
+					? '<input class="fca_eoi_form_input_element" type="email" name="email" placeholder="{{{email_placeholder}}}">'
+					: '<input type="email" name="email" placeholder="{{{email_placeholder}}}" 	/>',
+				EasyOptInsLayout::uses_new_css()
+					? '<input class="fca_eoi_form_button_element" type="submit" value="{{{button_copy}}}">'
+					: '<input type="submit" value="{{{button_copy}}}" />',
+				EasyOptInsLayout::uses_new_css()
+					? '<div>{{{privacy_copy}}}</div>'
+					: '<span >{{{privacy_copy}}}</span>',
+				EasyOptInsLayout::uses_new_css()
+					? '{{#show_fatcatapps_link}}<div class="fca_eoi_layout_fatcatapps_link_wrapper fca_eoi_form_text_element"><a href="http://fatcatapps.com/eoi" target="_blank">Powered by Optin Cat</a></div>{{/show_fatcatapps_link}}'
+					: '{{#show_fatcatapps_link}}<p class="fca_eoi_' . $layout_id . '_fatcatapps_link_wrapper"><a href="http://fatcatapps.com/eoi" target="_blank">Powered by Optin Cat</a></p>{{/show_fatcatapps_link}}',
+				'<input type="hidden" name="id" value="' . $atts[ 'id' ] . '"><input type="hidden" name="fca_eoi" value="1"></form></div>' . $form_wrapper_end,
 			),
 			$template
 		);
 
 		// Add per form CSS
-		$css = '<style>.fca_eoi_form{ margin: auto; }</style>';
+		if ( EasyOptInsLayout::uses_new_css() ) {
+			$css = '';
+		} else {
+			$css = '<style>.fca_eoi_form{ margin: auto; }</style>';
+		}
 		$css_for_scss ='';
 		if( ! empty( $fca_eoi_meta[ $layout_id ] ) ) {
 			$css .= '<style>';
@@ -193,6 +342,10 @@ class EasyOptInsShortcodes {
 				'show_fatcatapps_link' => K::get_var( 'show_fatcatapps_link', $fca_eoi_meta ),
 			)
 		);
+
+		if ( $layout_type != 'lightbox' ) {
+			$output .= '<script>' . EasyOptInsActivity::get_instance()->get_tracking_code( $post->ID ) . '</script>';
+		}
 
 		// add the fca_eoi_alter_form             
 		$output = apply_filters( 'fca_eoi_alter_form'

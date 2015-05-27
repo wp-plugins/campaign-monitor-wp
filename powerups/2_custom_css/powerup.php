@@ -10,7 +10,7 @@ function powerup_custom_css( $settings ) {
 			),
 			'page' => 'eoi_powerups',
 			'title' => __( 'Custom CSS' ),
-			'description' => sprintf( '<p class="description">%s</p><hr/>', __( 'Adds a settting that lets you add custom CSS to your opt-in box to the Easy Opt-ins editor.' ) ),
+			'description' => sprintf( '<p class="description eoi_powerup_description">%s</p>', __( 'Adds a setting that lets you add custom CSS to your opt-in box to the Easy Opt-ins editor.' ) ),
 		)
 	) );
 
@@ -30,7 +30,7 @@ class EoiCustomCssBox {
 		$this->settings = $settings;
 		
 		add_action( 'fca_eoi_powerups',           array( $this, 'show_custom_css_field' ) );  
-		add_action( 'admin_enqueue_scripts',      array( $this, 'enqueue_admin_js' ) );
+		add_action( 'admin_enqueue_scripts',      array( $this, 'enqueue_admin_scripts' ) );
 		add_action( 'admin_print_footer_scripts', array( $this, 'enqueue_admin_footer_js' ) );
 		add_filter( 'fca_eoi_alter_form',         array( $this, 'append_css_to_form' ) , 10 , 2 );
 	}
@@ -65,7 +65,8 @@ class EoiCustomCssBox {
 		echo '</div>';
 	}
 
-	public function enqueue_admin_js() {
+	public function enqueue_admin_scripts() {
+		wp_enqueue_style( 'powerups-css', $this->settings['plugin_url'] . '/assets/powerups/fca_eoi_powerups.css' );
 
 		$protocol = is_ssl() ? 'https' : 'http';
 		$screen = get_current_screen();

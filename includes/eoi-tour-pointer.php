@@ -51,8 +51,9 @@ class EOITourPointer {
 	 */
 	function add_fca_eoi_tour_item_param ( $link ) {
 
-		if( $params['fca-eoi-tour-item'] = K::get_var( 'fca-eoi-tour-item', $_REQUEST ) ) {
-			$link = add_query_arg( $params, $link );
+		$tour_item = K::get_var( 'fca-eoi-tour-item', $_REQUEST );
+		if ( ! empty( $tour_item ) ) {
+			$link = add_query_arg( array( 'fca-eoi-tour-item' => urlencode( $tour_item ) ), $link );
 		}
 		return $link;
 	}

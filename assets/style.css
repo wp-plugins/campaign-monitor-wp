@@ -9,4 +9,5 @@
 .featherlight {
 	background-color: rgba(0, 0, 0, 0.8);
 	width: 100%;
+	z-index: 9999990;
 }

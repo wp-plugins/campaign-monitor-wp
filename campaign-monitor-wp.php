@@ -4,13 +4,9 @@
     Plugin URI: https://fatcatapps.com/optincat
     Description: Campaign Monitor Optin Cat Helps You Get More Email Subscribers. Create Beautiful Campaign Monitor Opt-In Forms In Less Than 2 Minutes.
     Author: Fatcat Apps
-    Version: 1.2.1
+    Version: 1.3
     Author URI: https://fatcatapps.com/
 */
-
-// define constant for plugin path
-define('OIC_PLUGIN_PATH', plugin_dir_path( __FILE__ ));
-
 
 // define( 'FCA_EOI_DEBUG', true );
 if ( ! function_exists( 'is_admin' ) ) {
@@ -19,14 +15,18 @@ if ( ! function_exists( 'is_admin' ) ) {
 
 require 'includes/skelet/skelet.php';
 
+define( 'FCA_EOI_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'FCA_EOI_PLUGIN_FILE', __FILE__ );
+define( 'FCA_EOI_PLUGIN_URL', plugins_url( '', __FILE__ ) );
+
 if( ! defined ( 'FCA_EOI_DEBUG' ) ) {
     define( 'FCA_EOI_DEBUG', false );
 }
 if ( FCA_EOI_DEBUG && ! class_exists ( 'Kint' ) ) {
-    require plugin_dir_path( __FILE__ ) . 'includes/classes/kint/Kint.class.php';
+    require FCA_EOI_PLUGIN_DIR . 'includes/classes/kint/Kint.class.php';
 }
 if ( ! class_exists ( 'Mustache_Engine' ) ) {
-    require plugin_dir_path( __FILE__ ) . 'includes/classes/Mustache/Autoloader.php';
+    require FCA_EOI_PLUGIN_DIR . 'includes/classes/Mustache/Autoloader.php';
     Mustache_Autoloader::register();
 }
 
@@ -39,9 +39,9 @@ if ( ! class_exists ( 'Mustache_Engine' ) ) {
  */
 if ( ! class_exists ( 'scssc' ) ) {
     if( defined( '__DIR__' ) ) {
-        require plugin_dir_path( __FILE__ ) . 'includes/classes/scssphp/scss.inc.php';
+        require FCA_EOI_PLUGIN_DIR . 'includes/classes/scssphp/scss.inc.php';
     } else {
-        require plugin_dir_path( __FILE__ ) . 'includes/classes/scssphp-0.0.15/scss.inc.php';
+        require FCA_EOI_PLUGIN_DIR . 'includes/classes/scssphp-0.0.15/scss.inc.php';
     }
 }
 
@@ -49,13 +49,14 @@ if ( ! class_exists ( 'scssc' ) ) {
  * Include and instanciate Mobile Detect
  */
 if ( ! class_exists ( 'Mobile_Detect' ) ) {
-    require plugin_dir_path( __FILE__ ) . 'includes/classes/Mobile-Detect/Mobile_Detect.php';
+    require FCA_EOI_PLUGIN_DIR . 'includes/classes/Mobile-Detect/Mobile_Detect.php';
 }
+
 
 if( ! class_exists( 'DhEasyOptIns' ) ) {
 class DhEasyOptIns {
 
-    var $ver = '1.2.1';
+    var $ver = '1.3';
     var $distro = '';
     var $shortcode = 'optin-cat';
     var $shortcode_aliases = array(
@@ -69,13 +70,17 @@ class DhEasyOptIns {
 
     function __construct() {
 
-        require plugin_dir_path( __FILE__ ) . 'includes/eoi-post-types.php';
-        require plugin_dir_path( __FILE__ ) . 'includes/eoi-settings.php';
-        require plugin_dir_path( __FILE__ ) . 'includes/eoi-shortcode.php';
-        require plugin_dir_path( __FILE__ ) . 'includes/eoi-widget.php';
-        require plugin_dir_path( __FILE__ ) . 'includes/eoi-pointer.php';
-        require plugin_dir_path( __FILE__ ) . 'includes/eoi-tour-pointer.php';
-        require plugin_dir_path( __FILE__ ) . 'includes/compatibility-mode/eoi-compatibility-mode.php';
+        require FCA_EOI_PLUGIN_DIR . 'includes/eoi-error-handler.php';
+        require FCA_EOI_PLUGIN_DIR . 'includes/eoi-post-types.php';
+        require FCA_EOI_PLUGIN_DIR . 'includes/eoi-settings.php';
+        require FCA_EOI_PLUGIN_DIR . 'includes/eoi-layout.php';
+        require FCA_EOI_PLUGIN_DIR . 'includes/eoi-shortcode.php';
+        require FCA_EOI_PLUGIN_DIR . 'includes/eoi-widget.php';
+        require FCA_EOI_PLUGIN_DIR . 'includes/eoi-pointer.php';
+        require FCA_EOI_PLUGIN_DIR . 'includes/eoi-tour-pointer.php';
+        require FCA_EOI_PLUGIN_DIR . 'includes/eoi-activity.php';
+        require FCA_EOI_PLUGIN_DIR . 'includes/eoi-init.php';
+        require FCA_EOI_PLUGIN_DIR . 'includes/compatibility-mode/eoi-compatibility-mode.php';
 
         global $fca_eoi_shortcodes;
 
@@ -85,12 +90,6 @@ class DhEasyOptIns {
         // Settings
         $this->settings();
 
-        // Check plugin sanity (we must have at least one provider and one layout)
-        if( ! $this->check_sanity() ) {
-            add_action( 'admin_init', array( $this, 'shutdown' ) );
-            return;
-        }        
-        
         // Add provider to settings
         $providers_available = array_keys( $this->settings[ 'providers' ] );
         
@@ -123,7 +122,9 @@ class DhEasyOptIns {
         $post_types = new EasyOptInsPostTypes($this->settings);
         $fca_eoi_shortcodes = new EasyOptInsShortcodes($this->settings);
         $widget = new EasyOptInsWidgetHelper($this->settings);
-        
+        EasyOptInsActivity::get_instance()->settings = $this->settings;
+        EasyOptInsInit::get_instance()->setup();
+
         // Load subscribing banner for free users
         if( 1 == count( $providers_available ) ) {
             $pointer = new EasyOptInsPointer( $this->settings );
@@ -165,50 +166,109 @@ class DhEasyOptIns {
     }
 
     function settings() {
-        $this->settings['plugin_dir'] = plugin_dir_path( __FILE__ );
-        $this->settings['plugin_url'] = plugins_url('', __FILE__);
+        $this->settings['plugin_dir'] = FCA_EOI_PLUGIN_DIR;
+        $this->settings['plugin_url'] = FCA_EOI_PLUGIN_URL;
         $this->settings['shortcode']  = $this->shortcode;
         $this->settings['shortcode_aliases']  = $this->shortcode_aliases;
         $this->settings['version']    = $this->ver;
         $this->settings['provider']   = $this->provider;
+
         // Load all providers
         foreach ( glob( $this->settings[ 'plugin_dir' ] . 'providers/*', GLOB_ONLYDIR ) as $provider_path ) {  
             $provider_id = basename(  $provider_path );
             require_once "$provider_path/provider.php";
             $this->settings[ 'providers' ][ $provider_id ] = call_user_func( "provider_$provider_id" );
         }
+
+        $options_changed = ! empty( $_POST['paf'] );
+        if ( $options_changed ) {
+            $options_before = get_option('paf');
+            $options_after = $_POST['paf'];
+        }
+
         // Load all powerups
         foreach ( glob( $this->settings[ 'plugin_dir' ] . 'powerups/*', GLOB_ONLYDIR ) as $powerup_path ) {  
             $powerup_id = basename( $powerup_path );            
             $powerup_id = preg_replace('/(\d+)_/', '', $powerup_id);
+
             require_once "$powerup_path/powerup.php";
-            $this->settings[ 'powerups' ][ $powerup_id ] = call_user_func( "powerup_$powerup_id", $this->settings );
+            $function_name = "powerup_$powerup_id";
+            $this->settings[ 'powerups' ][ $powerup_id ] = call_user_func( $function_name, $this->settings );
+
+            $option_name = 'eoi_' . $function_name;
+            if ( $options_changed ) {
+                $hook_function_name = null;
+
+                if ( empty( $options_before[ $option_name ] ) && ! empty( $options_after[ $option_name ] ) ) {
+                    $hook_function_name = $function_name . '_on_activate';
+                } else if ( ! empty( $options_before[ $option_name ] ) && empty( $options_after[ $option_name ] ) ) {
+                    $hook_function_name = $function_name . '_on_deactivate';
+                }
+
+                if ( ! empty( $hook_function_name ) && function_exists( $hook_function_name ) ) {
+                    call_user_func( $hook_function_name, $this->settings );
+                }
+            }
         }
+
         paf_pages( array( 'eoi_powerups' => array(
             'title' => __( 'Power Ups Settings' ),
             'menu_title' => __( 'Power Ups' ),
             'parent' => 'edit.php?post_type=easy-opt-ins',
         ) ) );
+
+        $this->settings['error_text'] = array(
+            'field_required' => 'Error: This field is required.',
+            'invalid_email' => "Error: Please enter a valid email address. For example \"max@domain.com\"."
+        );
     }
+}
+}
 
-    function check_sanity() {
+require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
 
-        $providers = glob( $this->settings[ 'plugin_dir' ] . 'providers/*', GLOB_ONLYDIR );
-        $layouts = glob( $this->settings[ 'plugin_dir' ] . 'layouts/*', GLOB_ONLYDIR );
-
-        return ! empty( $providers ) && ! empty( $layouts );
-    }
-
-    function shutdown() {
-        deactivate_plugins( plugin_basename( __FILE__ ) );
-        wp_die( sprintf( 
+if ( ! is_plugin_active( plugin_basename( __FILE__ ) ) ) {
+    function fca_eoi_fail_activation( $message ) {
+        wp_die( sprintf(
             '<h2>%s</h2><p>%s</p><p><a class="button button-large" href="%s">%s</a></p>'
-            , __( 'Easy Opt-ins is broken!' )
-            , __( 'The plugin is broken, it has been deactivated, please <strong>delete and install again</strong>.' )
+            , __( 'Ooops!' )
+            , __( $message )
             , admin_url( 'plugins.php' )
             , __( 'Go to plugins page' )
         ) );
     }
+
+    function fca_eoi_activation() {
+        $plugins = get_plugins();
+
+        // Fail to activate the plugin if other Optin Cat plugins are already active
+        foreach ( $plugins as $file => $plugin ) {
+            if ( stripos( $plugin['PluginURI'], 'fatcatapps.com/optincat' ) !== false && is_plugin_active( $file ) ) {
+                $current_plugin = $plugins[ plugin_basename( __FILE__ ) ];
+                fca_eoi_fail_activation(
+                    'Only one Optin Cat plugin can be active at a time, but you already have ' .
+                    htmlspecialchars( $plugin['Name'] ) . ' active. ' .
+                    'Please deactivate it before activating ' .
+                    htmlspecialchars( $current_plugin['Name'] ) . '.' );
+            }
+        }
+
+        // Fail to activate the plugin if the providers or layouts directories are empty
+        $providers  = glob( FCA_EOI_PLUGIN_DIR . 'providers/*', GLOB_ONLYDIR );
+        $layouts    = glob( FCA_EOI_PLUGIN_DIR . 'layouts/*', GLOB_ONLYDIR );
+
+        if ( empty( $providers ) || empty( $layouts ) ) {
+            fca_eoi_fail_activation( 'Something went wrong. Please delete the plugin and install it again.' );
+        }
+
+        // If everything went well, continue with the activation setup
+        require FCA_EOI_PLUGIN_DIR . 'includes/eoi-activity.php';
+        EasyOptInsActivity::get_instance()->setup();
+    }
+
+    // If the plugin is not yet active, check for any obstacles in activation
+    register_activation_hook( __FILE__, 'fca_eoi_activation' );
+    return;
 }
+
 $dh_easy_opt_ins_plugin = new DhEasyOptIns();
-}

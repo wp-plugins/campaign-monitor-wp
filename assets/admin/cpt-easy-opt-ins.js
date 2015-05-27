@@ -18,12 +18,6 @@ jQuery( document ).ready( function( $ ) {
 		.val( 'layout_2' )
 	;
 
-	// Use Mailchimp by default
-	$( '[name="fca_eoi[provider]"]' )
-		.filter( function() { return fca_eoi_new_post; } )
-		.val( 'mailchimp' )
-	;
-
 	// Helpers
 	var providers_fieldsets_selector = '[id^=fca_eoi_fieldset_form_][id$=_integration]';
 
@@ -175,9 +169,11 @@ jQuery( document ).ready( function( $ ) {
 		}
 
 		for ( group in editables ) {
-			html = '<div class="fca_eoi_settings_' + layout_id + '"><hr />';
+			html = '';
+			var is_empty = true;
 			for ( selector in editables[ group ] ) {
 				for ( property in editables[ group ][ selector ] ) {
+					is_empty = false;
 					name = 'fca_eoi[:layout_id][:selector][:property]';
 					name = name
 						.replace( ':layout_id', layout_id )
@@ -216,8 +212,10 @@ jQuery( document ).ready( function( $ ) {
 					html += fca_eoi_property_field_html( property, name, label, selector, value );
 				}
 			}
-			html += '</div>';
-			$( '#fca_eoi_fieldset_' + group ).append( html );
+			var class_name = 'fca_eoi_settings_' + layout_id;
+			class_name += ' accordion-section-secondary-' + ( is_empty ? 'empty' : 'full' );
+			html = '<div class="' + class_name + '">' + html + '</div>';
+			$( '#fca_eoi_fieldset_' + group + ' .accordion-section-content' ).append( html );
 		}
 	} );
 
@@ -284,6 +282,123 @@ jQuery( document ).ready( function( $ ) {
 	update_toggles();
 	$( 'input[type=checkbox]' ).change( update_toggles );
 
+	var error_tooltip = {
+		is_added: {},
+
+		field_mapping: {
+			'name_field': 'field_required',
+			'email_field': 'invalid_email'
+		},
+
+		get_preview_field: function( error_id ) {
+			var mapped_field_id;
+			for ( mapped_field_id in error_tooltip.field_mapping ) {
+				if ( error_tooltip.field_mapping[ mapped_field_id ] == error_id ) {
+					return $( '[data-fca-eoi-fieldset-id="' + mapped_field_id + '"]' );
+				}
+			}
+
+			return null;
+		},
+
+		get_control_field: function( error_id ) {
+			var field = $( '[name="fca_eoi[error_text_' + error_id + ']"]' );
+			if ( field.length > 0 ) {
+				return field;
+			}
+
+			return null;
+		},
+
+		set_text: function( error_id, text ) {
+			var field = error_tooltip.get_preview_field( error_id );
+			if ( field ) {
+				field.tooltipster( 'content', text );
+			}
+		},
+
+		set_text_from_control_field: function( error_id ) {
+			var control_field = error_tooltip.get_control_field( error_id );
+			if ( control_field ) {
+				error_tooltip.set_text( error_id, control_field.val() );
+			}
+		},
+
+		setup: function( error_id ) {
+			if ( error_tooltip.is_added[ error_id ] ) {
+				return;
+			}
+
+			var field = error_tooltip.get_preview_field( error_id );
+			if ( field ) {
+				var width = field.width() * .8;
+
+				field.tooltipster( {
+					contentAsHTML: true
+					, fixedWidth: width
+					, minWidth: width
+					, maxWidth: width
+					, trigger: 'none'
+					, autoClose: false
+					, updateAnimation: false
+					, delay: 0
+					, speed: 0
+					, debug: false
+				} );
+
+				error_tooltip.is_added[ error_id ] = true;
+			}
+		},
+
+		reset: function() {
+			error_tooltip.is_added = {};
+		},
+
+		show: function( error_id ) {
+			var field = error_tooltip.get_preview_field( error_id );
+			if ( field ) {
+				field.tooltipster( 'show' );
+			}
+		},
+
+		hide: function( error_id ) {
+			if ( error_tooltip.is_added[ error_id ] ) {
+				error_tooltip.get_preview_field( error_id ).tooltipster( 'hide' );
+			}
+		},
+
+		hide_all: function() {
+			for ( var error_id in error_tooltip.is_added ) {
+				error_tooltip.hide( error_id );
+			}
+		},
+
+		update: function( immediate ) {
+			var refresh = function() {
+				error_tooltip.reset();
+				$( '[name^="fca_eoi[error_text_"]').each( function() {
+					var error_id = $( this ).attr( 'name' ).replace( /^fca_eoi\[error_text_(.+?)\]/, '$1' );
+					error_tooltip.setup( error_id );
+					error_tooltip.set_text_from_control_field( error_id );
+					error_tooltip.show( error_id );
+				} );
+			};
+
+			if ( immediate ) {
+				refresh();
+			} else {
+				setTimeout( refresh, t * 2 );
+			}
+		},
+
+		update_for_current_section: function( immediate ) {
+			if ( $( '#fca_eoi_fieldset_error_text.open' ).length > 0 ) {
+				error_tooltip.update( immediate );
+			}
+		}
+	};
+
+
 	// Rebuild preview when an element is changed,
 	// We should debounce, but we get errors (unsolved yet)
 	$( 'input, select, textarea', '#fca_eoi_settings' )
@@ -349,6 +464,8 @@ jQuery( document ).ready( function( $ ) {
 				}
 			} );
 
+			error_tooltip.update_for_current_section( true );
+
 			// console.log( 'Template Rebuilt (in ' + ( new Date().getMilliseconds() - start_time) + 'ms)' )
 		} , t ) );
 	;
@@ -369,23 +486,43 @@ jQuery( document ).ready( function( $ ) {
 		}, t );
 	} );
 
-	// Expand working fieldset
-	$( '#fca_eoi_preview' ).click( function() {
-		$( '#fca_eoi_fieldset_form:not(.expanded) legend').click();
-	} );
-	$( document ).on( 'click', '[data-fca-eoi-fieldset-id]', function() {
-
+	$( '[id^="fca_eoi_fieldset_"].accordion-section .accordion-section-title' ).live('click', function() {
 		var $this = $( this );
-		var fieldset_id = $this.data( 'fca-eoi-fieldset-id' );
+		var $parent = $this.closest( '[id^="fca_eoi_fieldset_"]' );
+		var field_id = $parent.attr('id');
 
-		$( '#fca_eoi_fieldset_' + fieldset_id + ':not(.expanded) legend').click();
+		if ( field_id == 'fca_eoi_fieldset_error_text' && $parent.hasClass('open') ) {
+      error_tooltip.update();
+		} else {
+			error_tooltip.hide_all();
+		}
 	} );
+
+	$( '[name^="fca_eoi[error_text_"]' ).change( error_tooltip.update );
+
+	// Expand working fieldset
+	var expand_fieldset = function ( fieldset_id ) {
+		$( '#fca_eoi_fieldset_' + fieldset_id + '.accordion-section:not(.open) .accordion-section-title').click();
+	};
+
+	$( '#fca_eoi_preview' ).click( function( event ) {
+		var $element = $( document.elementFromPoint( event.clientX, event.clientY ) ).closest( '[data-fca-eoi-fieldset-id]' );
+		if ( $element.length > 0 ) {
+			expand_fieldset( $element.data( 'fca-eoi-fieldset-id' ) );
+		} else {
+			expand_fieldset( 'form' );
+		}
+	} );
+
+	setTimeout( function() {
+		expand_fieldset( 'form' );
+	}, t );
 
 	// Highlight current preview element
 	setInterval( function() {
 
 		$( '.fca_eoi_highlighted', '#fca_eoi_preview' ).removeClass( 'fca_eoi_highlighted' );
-		$( '#fca_eoi_settings fieldset.expanded' ).each( function() {
+		$( '#fca_eoi_settings .accordion-section.open' ).each( function() {
 			
 			var $fieldset = $( this );
 			var $fieldset_id = $fieldset.attr( 'id' ).replace( 'fca_eoi_fieldset_', '' );
@@ -505,7 +642,6 @@ jQuery( document ).ready( function( $ ) {
 	;
 	$( '[name="fca_eoi[show_fatcatapps_link]"]' )
 		.filter( function() { return fca_eoi_new_post; } )
-		.attr( 'checked', 'checked' )
 	;
 
 	// If adding a new opt-in form, focus on the title

@@ -6,15 +6,17 @@ jQuery( document ).ready( function( $ ) {
 	var $lists = $( '[name="fca_eoi[campaignmonitor_list_id]"]' );
 	var $lists_wrapper = $( '#campaignmonitor_list_id_wrapper' );
 
-	// Track values to prevent duplicate AJAX request
-	$api_key.data( 'value', $api_key.val() );
-	$client_id.data( 'value', $client_id.val() );
+	fca_eoi_provider_status_setup( 'campaignmonitor', [ $api_key, $client_id ] );
 
 	campaignmonitor_toggle_fields();
 
 	$api_settings.change( function() {
+		if ( ! fca_eoi_provider_is_value_changed( $( this ) ) ) {
+			return;
+		}
 
-		var $this = $( this );
+		fca_eoi_provider_status_set( 'campaignmonitor', fca_eoi_provider_status_codes.loading );
+
 		var data = {
 			'action': 'fca_eoi_campaignmonitor_get_lists' /* API action name, do not change */
 			, 'campaignmonitor_api_key' : $api_key.val()
@@ -34,6 +36,11 @@ jQuery( document ).ready( function( $ ) {
 		$.post( ajaxurl, data, function( response ) {
 
 			var lists = JSON.parse( response );
+
+			fca_eoi_provider_status_set( 'campaignmonitor', Object.keys(lists).length > 1
+				? fca_eoi_provider_status_codes.ok
+				: fca_eoi_provider_status_codes.error );
+
 			var $lists = $( '<select class="select2" style="width: 27em;" name="fca_eoi[campaignmonitor_list_id]" >' );
 
 			for ( list_id in lists ) {

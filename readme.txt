@@ -1,17 +1,17 @@
-=== Campaign Monitor Optin Cat ===
+=== Campaign Monitor Forms by Optin Cat ===
 Contributors: davidhme, fatcatapps
 Donate link: https://fatcatapps.com/optincat?utm_campaign=description%2Bcta&utm_source=https%3A%2F%2Fwordpress.org%2Fplugins%2Fcampaign-monitor-wp%2F&utm_medium=referral
-Tags: campaign monitor, campaign monitor opt-in, campaign monitor wordpress plugin, campaign monitor widget, campaign monitor wordpress subscribe plugin, campaign monitor for wordpress, popup, lightbox popup
+Tags: campaign monitor, campaignmonitor, campaign monitor forms, campaignmonitor optin, campaign monitor wordpress plugin, campaign monitor widget, campaign monitor wordpress subscribe plugin, campaign monitor for wordpress, campaign monitor popup, campaignmonitor list subscribe form
 
 Author URI: https://fatcatapps.com/
 Plugin URI: https://fatcatapps.com/optincat?utm_campaign=description%2Bcta&utm_source=https%3A%2F%2Fwordpress.org%2Fplugins%2Fcampaign-monitor-wp%2F&utm_medium=referral
 Requires at least: 3.9.1
-Tested up to: 4.1.1
-Stable tag: 1.2.1
+Tested up to: 4.2.2
+Stable tag: 1.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-The Opt-ins For Campaign Monitor WordPress Plugin Helps You Get More Email Subscribers. Create Beautiful Campaign Monitor Opt-In Forms In Less Than 2 Minutes.
+The Campaign Monitor Forms by Optin CatWordPress Plugin Helps You Get More Email Subscribers. Create Beautiful Campaign Monitor Opt-In Forms In Less Than 2 Minutes.
  
 == Description ==
 
@@ -37,6 +37,7 @@ The **Campaign Monitor Optin Cat** WordPress Plugin lets you create gorgeous Cam
 *   Form validation.
 *   Redirect users to a "Thank You"-page after submission.
 *   Build unlimited Campaign Monitor forms.
+*   Analytics feature so you can learn which Campaign Monitor forms work well and which ones don't.
 
 = Developer Friendly =
 
@@ -45,13 +46,16 @@ The **Campaign Monitor Optin Cat** WordPress Plugin lets you create gorgeous Cam
 
 
 > #### Optin Cat Premium
-> Optin Cat Premium comes with the following features.<br />
+> Optin Cat Premium helps you get more Campaign Monitor subscribers:<br />
 >
 > Lots Of Additional Beatiful Layout & Design Options.<br />
-> Advanced Popup Targeteting: Number of pageviews during this visit, Scrolled down on current page (%), Only show on specific posts/pages/categories, Never show on specific posts/pages/categories.<br />
+> Smart Popup Targeting.<br />
+> Mobile Campaign Monitor popups.<br />
 > Two Step Optin Feature: Trigger a Popup Optin Form after the user clicks on a hyperlink.<br />
 > Priority Email Support.<br />
->
+> Offers Feature: Send optin baits & content upgrades straight from your WordPress backend.<br />
+> Exit Intervention: Display popups when the user is about to leave your site.<br />
+> Priority Email Support.<br />
 >
 > [Learn more about Easy Opt-ins Premium >>](https://fatcatapps.com/optincat?utm_campaign=description%2Bcta&utm_source=https%3A%2F%2Fwordpress.org%2Fplugins%2Fcampaign-monitor-wp%2F&utm_medium=referral)
 
@@ -69,9 +73,11 @@ In order to use this plugin you'll need a Campaign Monitor account + Campaign Mo
 
 == Screenshots ==
 
-1. The Campaign Monitor Opt-in Form Builder
-2. The Form on a live website
-3. Built-in form validation
+1. The Campaign Monitor Form Builder
+2. Built-in Campaign Monitor form validation
+3. Campaign Monitor Post Box
+4. Campaign Monitor Popup
+5. Another Campaign Monitor Post Box (part of Optin Cat Premium)
 
 == Installation ==
 
@@ -81,7 +87,15 @@ In order to use this plugin you'll need a Campaign Monitor account + Campaign Mo
 
 == Changelog ==
 
-= Campaign Monitor Forms by Optin Cat 1.2.1 = 
+= Campaign Monitor Forms by Optin Cat 1.3 =
+* Added Analytics feature
+* Added tinyMCE button to WP Post editor
+* Improved Optin Editor UI
+* Various minor bugfixes
+* Added the ability to customize error text
+* Fixed a bug that displayed not-mobile friendly popups on some mobile devices
+
+= Campaign Monitor Forms by Optin Cat 1.2.2 = 
 * Bugfix: "Quick edit" disappears on pages
 * Improved performance / loadspeed of popup feature
 * Improved performance of WP backend
