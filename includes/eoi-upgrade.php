@@ -36,9 +36,9 @@ class EasyOptInsUpgrade {
         $message =
             '<div>' .
                 'Thanks for using Optin Cat. Do you like this plugin? ' .
-                '<a href="' . $this->fca_maketing_page_top_ad . '">Optin Cat Premium</a> ' .
+                '<a href="' . $this->fca_maketing_page_top_ad . '" target="_blank">Optin Cat Premium</a> ' .
                 'comes with even more features that help you grow your list. Love it or get your money back. ' .
-                '<a href="' . $this->fca_maketing_page_top_ad . '">Learn more here</a>.' .
+                '<a href="' . $this->fca_maketing_page_top_ad . '" target="_blank">Learn more here</a>.' .
             '</div>';
 
         ?>
@@ -164,7 +164,7 @@ class EasyOptInsUpgrade {
                     <?php if ( in_array( 'mailchimp', array_keys( $this->settings['providers'] ) ) ): ?>
                         $( '#fca_eoi_fieldset_form_mailchimp_integration' ).append( <?php echo json_encode( str_replace(
                             array( '__class__', '__text__' ),
-                            array( 'fca_eoi_upgrade_bar fca_eoi_upgrade_bar_inner', 'Want to use MailChimp single optin (no confirmation email required)? Upgrade to Premium' ),
+                            array( 'fca_eoi_upgrade_bar fca_eoi_upgrade_bar_inner', 'Want to set up MailChimp Single Optin? Upgrade to Premium' ),
                             $template
                         ) ) ?> );
                     <?php endif ?>

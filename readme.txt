@@ -7,11 +7,11 @@ Author URI: https://fatcatapps.com/
 Plugin URI: https://fatcatapps.com/optincat?utm_campaign=description%2Bcta&utm_source=https%3A%2F%2Fwordpress.org%2Fplugins%2Fcampaign-monitor-wp%2F&utm_medium=referral
 Requires at least: 3.9.1
 Tested up to: 4.2.2
-Stable tag: 1.3
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-The Campaign Monitor Forms by Optin CatWordPress Plugin Helps You Get More Email Subscribers. Create Beautiful Campaign Monitor Opt-In Forms In Less Than 2 Minutes.
+The Campaign Monitor Forms by Optin CatWordPress Plugin Helps You Get More Email Subscribers. Create Beautiful Campaign Monitor Forms In 2 Minutes.
  
 == Description ==
 
@@ -73,11 +73,13 @@ In order to use this plugin you'll need a Campaign Monitor account + Campaign Mo
 
 == Screenshots ==
 
-1. The Campaign Monitor Form Builder
-2. Built-in Campaign Monitor form validation
+1. Examples of the Campaign Monitor form designs
+2. The Campaign Monitor Opt-in Form Builder
 3. Campaign Monitor Post Box
 4. Campaign Monitor Popup
-5. Another Campaign Monitor Post Box (part of Optin Cat Premium)
+5. Another Campaign Monitor Post Box
+6. Campaign Monitor Analytics
+7. The whole settings screen
 
 == Installation ==
 
@@ -86,6 +88,9 @@ In order to use this plugin you'll need a Campaign Monitor account + Campaign Mo
 3. In your sidebar, select 'Optin Cat -> Add New' to create a new table
 
 == Changelog ==
+
+= Campaign Monitor Forms by Optin Cat 1.3 =
+* Fixed a bug that caused some conversions to be tracked more than once
 
 = Campaign Monitor Forms by Optin Cat 1.3 =
 * Added Analytics feature

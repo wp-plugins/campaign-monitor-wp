@@ -83,6 +83,8 @@ jQuery( document ).ready(function( $ ){
 				return false;
 			}
 
+			$( '.fca_eoi_form_button_element', $this ).attr( 'disabled', 'disabled' );
+
 			return true;
 
 			// Start highlighting
