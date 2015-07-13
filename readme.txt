@@ -6,8 +6,8 @@ Tags: campaign monitor, campaignmonitor, campaign monitor forms, campaignmonitor
 Author URI: https://fatcatapps.com/
 Plugin URI: https://fatcatapps.com/optincat?utm_campaign=description%2Bcta&utm_source=https%3A%2F%2Fwordpress.org%2Fplugins%2Fcampaign-monitor-wp%2F&utm_medium=referral
 Requires at least: 3.9.1
-Tested up to: 4.2.2
-Stable tag: 1.3.1
+Tested up to: 4.2.3
+Stable tag: 1.3.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,7 +53,7 @@ The **Campaign Monitor Optin Cat** WordPress Plugin lets you create gorgeous Cam
 > Mobile Campaign Monitor popups.<br />
 > Two Step Optin Feature: Trigger a Popup Optin Form after the user clicks on a hyperlink.<br />
 > Priority Email Support.<br />
-> Offers Feature: Send optin baits & content upgrades straight from your WordPress backend.<br />
+> Content Upgrades: Send optin baits & content upgrades straight from your WordPress backend.<br />
 > Exit Intervention: Display popups when the user is about to leave your site.<br />
 > Priority Email Support.<br />
 >
@@ -88,6 +88,17 @@ In order to use this plugin you'll need a Campaign Monitor account + Campaign Mo
 3. In your sidebar, select 'Optin Cat -> Add New' to create a new table
 
 == Changelog ==
+
+= Campaign Monitor Forms by Optin Cat 1.3.4 =
+* Refactored Popup Targeting Engine for better performance
+
+= Campaign Monitor Forms by Optin Cat 1.3.3 =
+* Performance improvements
+* Fixed a plugin conflict with another Campaign Monitor plugin 
+* Minor Bugfixes
+
+= Campaign Monitor Forms by Optin Cat 1.3.2 =
+* Fixed a bug that caused display issues on some sites after unchecking the "New CSS" powerup
 
 = Campaign Monitor Forms by Optin Cat 1.3 =
 * Fixed a bug that caused some conversions to be tracked more than once
