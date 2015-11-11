@@ -1,11 +1,11 @@
-jQuery( document ).ready(function( $ ){
+jQuery( document ).ready(function(){
 
-	$( document ).on( 'submit', '.fca_eoi_form', function () {
+	jQuery( document ).on( 'submit', '.fca_eoi_form', function () {
 
 		// Attach tooltips
-		$( '[name=email], [name=name]', $( this ) ).each( function() {
+		jQuery( '[name=email], [name=name]', $( this ) ).each( function() {
 
-			var $this = $( this );
+			var $this = jQuery( this );
 			var tooltipWidth = $this.width() * .8;
 
 			$this.tooltipster( {
@@ -18,9 +18,9 @@ jQuery( document ).ready(function( $ ){
 		} );
 
 		// Remove tooltip and tick on focus
-		$( '[name=email], [name=name]', $( this ) ).focus( function() {
-			var $this = $( this );
-			var $button = $( '[type=submit]', $this.closest( '.fca_eoi_form' ) );
+		jQuery( '[name=email], [name=name]', $( this ) ).focus( function() {
+			var $this = jQuery( this );
+			var $button = jQuery( '[type=submit]', $this.closest( '.fca_eoi_form' ) );
 			var button_initial_val = $button.data( 'fca_eoi_initial_val' );
 
 			// Remove any previous icon
@@ -29,25 +29,25 @@ jQuery( document ).ready(function( $ ){
 			}
 			
 			// Hide tooltip
-			$( this ).tooltipster( 'hide' );
+			jQuery( this ).tooltipster( 'hide' );
 		} );
 
 		// Handle form submissions
 		//$( '.fca_eoi_form' ).submit( function( e ) {
 
-			var $this = $( this );
-			var $email_field = $( '[name=email]', $this );
-			var $name_field = $( '[name=name]', $this );
+			var $this = jQuery( this );
+			var $email_field = jQuery( '[name=email]', $this );
+			var $name_field = jQuery( '[name=name]', $this );
 			var name = $name_field.val();
 			var email = $email_field.val();
 			var list_id = $this.data( 'fca_eoi_list_id' );
 			var url = 'https://api.createsend.com/api/v3.1/subscribers/' + list_id + '.json';
-			var $button = $( '[type=submit]', $this );
+			var $button = jQuery( '[type=submit]', $this );
 			var button_initial_val;
 			var highlight_interval = false;
 			var thank_you_page = $this.data( 'fca_eoi_thank_you_page' );
 			var has_error = false;
-	                var fca_eoi_form_id = $( '[name=fca_eoi_form_id]', $this ).val();
+	                var fca_eoi_form_id = jQuery( '[name=fca_eoi_form_id]', $this ).val();
 
 			// Save or save and get initial button value
 			if( $button.data( 'fca_eoi_initial_val' ) ) {

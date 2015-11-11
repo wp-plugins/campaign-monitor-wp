@@ -161,13 +161,16 @@ class EasyOptInsShortcodes {
 	}
 
 	public function button() {
+		if (current_user_can( 'delete_pages')){
+		
 		$button_title = __( 'Optin Cat' );
-
+		
 		if ( version_compare( $GLOBALS['wp_version'], '3.5', '<' ) ) {
 			echo '<a href="#TB_inline?width=640&inlineId=fca-eoi-shortcode-thickbox" class="thickbox" title="' . $button_title . '">' . $button_title . '</a>';
 		} else {
 			$img = '<span class="wp-media-buttons-icon" id="fca-eoi-media-button"></span>';
 			echo '<a href="#TB_inline?width=640&inlineId=fca-eoi-shortcode-thickbox" class="thickbox button" title="' . $button_title . '" style="padding-left: .4em;">' . $img . $button_title . '</a>';
+		}
 		}
 	}
 
@@ -274,6 +277,10 @@ class EasyOptInsShortcodes {
 
 		wp_enqueue_script( 'tooltipster', $this->settings[ 'plugin_url' ] . '/assets/vendor/tooltipster/jquery.tooltipster.min.js' );
 		wp_enqueue_style( 'tooltipster', $this->settings[ 'plugin_url' ] . '/assets/vendor/tooltipster/tooltipster.min.css' );
+
+		wp_enqueue_script( 'featherlight', $this->settings[ 'plugin_url' ] . '/assets/vendor/featherlight/release/featherlight.min.js' );
+		wp_enqueue_style( 'featherlight', $this->settings[ 'plugin_url' ] . '/assets/vendor/featherlight/release/featherlight.min.css' );
+
 		wp_localize_script(
 			'fca_eoi'
 			, 'fca_eoi'
@@ -309,7 +316,7 @@ class EasyOptInsShortcodes {
 		$layout_type    = $layout->layout_type;
 		$html_path      = $layout->path_to_resource( 'layout', 'html' );
 		$html_wrap_path = $layout->path_to_html_wrapper();
-
+		
 		if ( ! file_exists( $html_path ) ) {
 			return '';
 		}
@@ -354,7 +361,7 @@ class EasyOptInsShortcodes {
 				sprintf(
 					$form_wrapper .
 					'<div id="fca_eoi_form_%s" class="fca_eoi_form_content">' .
-						'<form method="post" action="" class="fca_eoi_form %s %s" ' .
+						'<form method="post" action="#" class="fca_eoi_form %s %s" ' .
 							'data-fca_eoi_list_id="%s" data-fca_eoi_thank_you_page="%s" novalidate' .
 						'>' .
 							'<input type="hidden" name="fca_eoi_form_id" value="%s" />'
@@ -435,7 +442,10 @@ class EasyOptInsShortcodes {
 				'</script>';
 		}
 
+		$prerequisites = $this->get_prerequisites_for_form( $form_id );
+		$prerequisites = str_replace('<style', '<style scoped', $prerequisites);
+
 		// Return form with debugging information if applicable
-		return $this->get_prerequisites_for_form( $form_id ) . $output . ( FCA_EOI_DEBUG ? @d( $fca_eoi_meta, $template ) : '' );
+		return $prerequisites . $output . ( FCA_EOI_DEBUG ? @d( $fca_eoi_meta, $template ) : '' );
 	}
 }
