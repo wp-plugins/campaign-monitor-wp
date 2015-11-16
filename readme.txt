@@ -7,7 +7,7 @@ Author URI: https://fatcatapps.com/
 Plugin URI: https://fatcatapps.com/optincat/upgrade/?utm_campaign=description%2Bcta&utm_source=https%3A%2F%2Fwordpress.org%2Fplugins%2Fcampaign-monitor-wp%2F&utm_medium=referral
 Requires at least: 3.9.1
 Tested up to: 4.4
-Stable tag: 1.4.1
+Stable tag: 1.4.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,9 @@ In order to use this plugin you'll need a Campaign Monitor account + Campaign Mo
 3. In your sidebar, select 'Optin Cat -> Add New' to create a new table
 
 == Changelog ==
+
+= Campaign Monitor Forms by Optin Cat 1.4.2 =
+* Fixed a bug that stopped the optin form validation to work and/or caused the custom Error Text to not be displayed correctly in some cases.
 
 = Campaign Monitor Forms by Optin Cat 1.4.1 =
 * Bugfix: Fixed a conflict with the Beaver Builder plugin

@@ -821,6 +821,15 @@ jQuery( document ).ready( function( $ ) {
 		} )
 		.change()
 	;
+	
+	// Add default error text if it is empty
+	if ( $( '[name="fca_eoi[error_text_field_required]"]' ).val() === '' ) {
+		$( '[name="fca_eoi[error_text_field_required]"]' ).val("Error: This field is required.");
+	}
+	
+	if ( $( '[name="fca_eoi[error_text_invalid_email]"]' ).val() === '' ) {
+		$( '[name="fca_eoi[error_text_invalid_email]"]' ).val("Error: Please enter a valid email address. For example \"max@domain.com\".");
+	}	
 
 	// Debounce
 	function debounce( fn, threshold ) {

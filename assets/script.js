@@ -2,9 +2,11 @@ jQuery( document ).ready(function(){
 
 	jQuery( document ).on( 'submit', '.fca_eoi_form', function () {
 
+	
+	
 		// Attach tooltips
-		jQuery( '[name=email], [name=name]', $( this ) ).each( function() {
-
+		jQuery( '[name=email], [name=name]' ).each( function(index) {
+		
 			var $this = jQuery( this );
 			var tooltipWidth = $this.width() * .8;
 
@@ -18,7 +20,7 @@ jQuery( document ).ready(function(){
 		} );
 
 		// Remove tooltip and tick on focus
-		jQuery( '[name=email], [name=name]', $( this ) ).focus( function() {
+		jQuery( '[name=email], [name=name]', jQuery( this ) ).focus( function() {
 			var $this = jQuery( this );
 			var $button = jQuery( '[type=submit]', $this.closest( '.fca_eoi_form' ) );
 			var button_initial_val = $button.data( 'fca_eoi_initial_val' );
@@ -31,7 +33,10 @@ jQuery( document ).ready(function(){
 			// Hide tooltip
 			jQuery( this ).tooltipster( 'hide' );
 		} );
-
+		
+		
+		//RN NOTE WHY IS THIS SO OVER COMPLICATED...
+		
 		// Handle form submissions
 		//$( '.fca_eoi_form' ).submit( function( e ) {
 
@@ -59,7 +64,12 @@ jQuery( document ).ready(function(){
 			
 			// Remove any previous icon
 			$button.val( button_initial_val );
-
+			
+			// Get Error Messages from hidden fields
+			var blah = fca_eoi.ajax_url;
+			fca_eoi.invalid_email = $this.children('.fca_eoi_error_texts_email').val();
+			fca_eoi.field_required = $this.children('.fca_eoi_error_texts_required').val();
+			
 			// Check email address
 			if( ! email || ! is_email( email ) ) {
 
